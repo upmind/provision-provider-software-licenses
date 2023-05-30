@@ -2,6 +2,7 @@
     "name": "upmind/provision-provider-software-licenses",
     "description": "Provision category for various providers of software licenses",
     "type": "library",
+    "license": "GPL-3.0-only",
     "authors": [
         {
             "name": "Harry Lewis",
