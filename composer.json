@@ -1,0 +1,26 @@
+{
+    "name": "upmind/provision-provider-software-licenses",
+    "description": "Provision category for various providers of software licenses",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Harry Lewis",
+            "email": "harry@upmind.com"
+        }
+    ],
+    "require": {
+        "upmind/provision-provider-base": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Upmind\\ProvisionProviders\\SoftwareLicenses\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Upmind\\ProvisionProviders\\SoftwareLicenses\\LaravelServiceProvider"
+            ]
+        }
+    }
+}
