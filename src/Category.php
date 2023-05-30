@@ -6,6 +6,8 @@ namespace Upmind\ProvisionProviders\SoftwareLicenses;
 
 use Upmind\ProvisionBase\Provider\BaseCategory;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageParams;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\EmptyResult;
@@ -39,6 +41,11 @@ abstract class Category extends BaseCategory
      * Create a new license key.
      */
     abstract public function create(CreateParams $params): CreateResult;
+
+    /**
+     * Upgrade or downgrade a software license package.
+     */
+    abstract public function changePackage(ChangePackageParams $params): ChangePackageResult;
 
     /**
      * Reissue an existing license key.

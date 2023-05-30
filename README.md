@@ -45,6 +45,7 @@ The following providers are currently implemented:
 |---|---|---|---|
 | getUsageData() | [_GetUsageParams_](src/Data/GetUsageParams.php) | [_GetUsageResult_](src/Data/GetUsageResult.php) | Get usage stats about a license key |
 | create() | [_CreateParams_](src/Data/CreateParams.php) | [_CreateResult_](src/Data/CreateResult.php) | Create a new license key |
+| changePackage() | [_ChangePackageParams_](src/Data/ChangePackageParams.php) | [_ChangePackageResult_](src/Data/ChangePackageResult.php) | Upgrade or downgrade a software license package |
 | reissue() | [_ReissueParams_](src/Data/ReissueParams.php) | [_ReissueResult_](src/Data/ReissueResult.php) | Reissue an existing license key |
 | suspend() | [_SuspendParams_](src/Data/SuspendParams.php) | [_EmptyResult_](src/Data/EmptyResult.php) | Suspend a license key |
 | unsuspend() | [_UnsuspendParams_](src/Data/UnsuspendParams.php) | [_EmptyResult_](src/Data/EmptyResult.php) | Unsuspend a license key |

@@ -8,6 +8,8 @@ use GuzzleHttp\Client;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SoftwareLicenses\Category;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageParams;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\EmptyResult;
@@ -62,6 +64,14 @@ class Provider extends Category implements ProviderInterface
      * @inheritDoc
      */
     public function create(CreateParams $params): CreateResult
+    {
+        throw $this->errorResult('Not implemented');
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
         throw $this->errorResult('Not implemented');
     }

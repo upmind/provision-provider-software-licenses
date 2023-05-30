@@ -11,6 +11,9 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read string|null $access_token Access bearer token to send in requests
  * @property-read string $create_endpoint_url Endpoint which creates a license key and returns a username
  * @property-read string $create_endpoint_http_method HTTP method to use for the create endpoint
+ * @property-read boolean $has_change_package Whether or not this configuration has a changePackage endpoint
+ * @property-read string|null $change_package_endpoint_url Endpoint which changes a license key's package
+ * @property-read string|null $change_package_endpoint_http_method HTTP method to use for the changePackage endpoint
  * @property-read boolean $has_usage_data Whether or not this configuration has a getUsageData endpoint
  * @property-read string|null $get_usage_data_endpoint_url Endpoint which gets usage data of a license key
  * @property-read string|null $get_usage_data_endpoint_http_method HTTP method to use for the getUsageData endpoint
@@ -44,6 +47,18 @@ class Configuration extends DataSet
                 'required',
                 'string',
                 'in:post,put,patch,get'
+            ],
+            'has_change_package' => [
+                'boolean'
+            ],
+            'change_package_endpoint_url' => [
+                'required_if:has_change_package,1',
+                'url', /* 'starts_with:https' */
+            ],
+            'change_package_endpoint_http_method' => [
+                'required_if:has_change_package,1',
+                'string',
+                'in:post,put,patch,get,delete'
             ],
             'has_usage_data' => [
                 'boolean'

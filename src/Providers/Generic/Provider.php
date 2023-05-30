@@ -12,6 +12,8 @@ use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionProviders\SoftwareLicenses\Category;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageParams;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\EmptyResult;
@@ -65,6 +67,28 @@ class Provider extends Category implements ProviderInterface
         return CreateResult::create()
             ->setLicenseKey($handler->getLicenseKey())
             ->setServiceIdentifier($handler->getServiceIdentifier() ?? $params->service_identifier)
+            ->setPackageIdentifier($handler->getPackageIdentifier() ?? $params->package_identifier);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function changePackage(ChangePackageParams $params): ChangePackageResult
+    {
+        if (!$this->configuration->has_change_package) {
+            return $this->errorResult('No change package endpoint set in this configuration');
+        }
+
+        $method = strtoupper($this->configuration->change_package_endpoint_http_method);
+        $endpointUrl = $this->configuration->change_package_endpoint_url;
+
+        $requestParams = $params->toArray();
+        $requestParams = array_merge($requestParams, Arr::pull($requestParams, 'extra', [])); // merge extra params
+
+        $handler = new LicenseKeyResponseHandler($this->request($method, $endpointUrl, $requestParams));
+
+        return ChangePackageResult::create()
+            ->setLicenseKey($handler->getLicenseKey())
             ->setPackageIdentifier($handler->getPackageIdentifier() ?? $params->package_identifier);
     }
 
