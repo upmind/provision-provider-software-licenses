@@ -43,6 +43,7 @@ class Provider extends Category implements ProviderInterface
     {
         return AboutData::create()
             ->setName('Generic')
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/generic-logo.png')
             ->setDescription('A highly-configurable generic provider for provisioning license keys');
     }
 
