@@ -7,6 +7,7 @@ namespace Upmind\ProvisionProviders\SoftwareLicenses;
 use Upmind\ProvisionBase\Laravel\ProvisionServiceProvider;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Generic\Provider as GenericProvider;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Example\Provider as ExampleProvider;
+use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Blesta\Provider as BlestaProvider;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
 {
@@ -17,5 +18,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         // $this->bindCategory('software-licenses', 'example', ExampleProvider::class);
 
         $this->bindProvider('software-licenses', 'generic', GenericProvider::class);
+        $this->bindProvider('software-licenses', 'blesta', BlestaProvider::class);
     }
 }
