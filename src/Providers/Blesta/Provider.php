@@ -60,7 +60,7 @@ class Provider extends Category implements ProviderInterface
         $command = "addlicense";
 
         $body = [
-            'vars[pricing_id]' => $this->getPackagePricing($params->package_identifier)
+            'vars[pricing_id]' => $this->getPackagePricingId($params->package_identifier)
         ];
 
         try {
@@ -72,8 +72,19 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
-    protected function getPackagePricing(string $packageId): string
+    /**
+     * @param string $package Package ID or name
+     */
+    protected function getPackagePricingId(string $package): string
     {
+        $packageId = $package;
+
+        if (!is_numeric($package)) {
+            $packageData = $this->getPackage($package);
+
+            return $packageData['pricing'][0]['id'];
+        }
+
         $command = "getpackagepricing";
 
         $params = [
@@ -84,7 +95,7 @@ class Provider extends Category implements ProviderInterface
             $response = $this->makeRequest($command, $params);
 
             if ($response['response'] == []) {
-                throw $this->errorResult('Package does not exist');
+                throw $this->errorResult('Package pricing not found');
             }
 
             return (string)$response['response'][0]['id'];
@@ -93,7 +104,30 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
-    protected function checkLicense(string $license_key): void
+    /**
+     * @param string $package Package ID or name
+     */
+    protected function getPackage(string $package): array
+    {
+        $response = $this->makeRequest('getpackages');
+
+        if (empty($response['response'])) {
+            throw $this->errorResult('No license packages available');
+        }
+
+        foreach ($response['response'] as $packageData) {
+            if ($package === $packageData['name'] || $package === $packageData['id']) {
+                return $packageData;
+            }
+        }
+
+        throw $this->errorResult('Package not found');
+    }
+
+    /**
+     * Get license data by key.
+     */
+    protected function getLicense(string $license_key): array
     {
         $command = "search";
 
@@ -110,7 +144,7 @@ class Provider extends Category implements ProviderInterface
 
             foreach ($response['response'] as $license) {
                 if ($license_key == $license['fields']['license_module_key']) {
-                    return;
+                    return $license;
                 }
             }
 
@@ -135,7 +169,7 @@ class Provider extends Category implements ProviderInterface
         ];
 
         try {
-            $this->checkLicense($params->license_key);
+            $this->getLicense($params->license_key);
             $this->makeRequest($command, null, $body, 'POST');
 
             return ReissueResult::create([
@@ -155,7 +189,7 @@ class Provider extends Category implements ProviderInterface
             'vars[license]' => $params->license_key
         ];
         try {
-            $this->checkLicense($params->license_key);
+            $this->getLicense($params->license_key);
             $this->makeRequest($command, null, $body, 'POST');
 
             return EmptyResult::create();
@@ -173,7 +207,7 @@ class Provider extends Category implements ProviderInterface
         ];
 
         try {
-            $this->checkLicense($params->license_key);
+            $this->getLicense($params->license_key);
             $this->makeRequest($command, null, $body, 'POST');
 
             return EmptyResult::create();
@@ -191,7 +225,7 @@ class Provider extends Category implements ProviderInterface
         ];
 
         try {
-            $this->checkLicense($params->license_key);
+            $this->getLicense($params->license_key);
             $this->makeRequest($command, null, $body, 'POST');
 
             return EmptyResult::create();
