@@ -48,7 +48,8 @@ class Provider extends Category implements ProviderInterface
 
     public function getUsageData(GetUsageParams $params): GetUsageResult
     {
-        throw $this->errorResult('Not implemented');
+        return GetUsageResult::create()
+            ->setUsageData($this->getLicense($params->license_key));
     }
 
     public function create(CreateParams $params): CreateResult
