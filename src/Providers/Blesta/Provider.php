@@ -176,7 +176,6 @@ class Provider extends Category implements ProviderInterface
             return ReissueResult::create([
                 'license_key' => $params->license_key,
             ])->setMessage('License reissued');
-
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
@@ -244,7 +243,6 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
-
     protected function client(): Client
     {
         if (isset($this->client)) {
@@ -266,7 +264,6 @@ class Provider extends Category implements ProviderInterface
 
         return $this->client = $client;
     }
-
 
     public function makeRequest(string $command, ?array $params = null, ?array $body = null, ?string $method = 'GET'): ?array
     {
