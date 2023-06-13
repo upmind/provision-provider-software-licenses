@@ -42,8 +42,8 @@ class Provider extends Category implements ProviderInterface
     {
         return AboutData::create()
             ->setName('Blesta')
-            // ->setLogoUrl('https://example.com/logo.png')
-            ->setDescription('A highly-configurable Blesta provider for provisioning license keys');
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/blesta-logo.png')
+            ->setDescription('Resell, provision and manage Blesta licenses');
     }
 
     public function getUsageData(GetUsageParams $params): GetUsageResult
@@ -67,7 +67,7 @@ class Provider extends Category implements ProviderInterface
         try {
             $response = $this->makeRequest($command, null, $body, 'POST');
 
-            return CreateResult::create(['license_key' => $response['response']]);
+            return CreateResult::create(['license_key' => $response['response']])->setMessage('License created');
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
@@ -140,7 +140,7 @@ class Provider extends Category implements ProviderInterface
             $response = $this->makeRequest($command, $params);
 
             if ($response['response'] == []) {
-                throw $this->errorResult('License does not exist');
+                throw $this->errorResult('License not found');
             }
 
             foreach ($response['response'] as $license) {
@@ -149,7 +149,7 @@ class Provider extends Category implements ProviderInterface
                 }
             }
 
-            throw $this->errorResult('License does not exist');
+            throw $this->errorResult('License not found');
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
@@ -157,7 +157,7 @@ class Provider extends Category implements ProviderInterface
 
     public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
-        throw $this->errorResult('Not implemented');
+        throw $this->errorResult('Operation not supported');
     }
 
     public function reissue(ReissueParams $params): ReissueResult
@@ -175,7 +175,7 @@ class Provider extends Category implements ProviderInterface
 
             return ReissueResult::create([
                 'license_key' => $params->license_key,
-            ]);
+            ])->setMessage('License reissued');
 
         } catch (\Throwable $e) {
             $this->handleException($e);
@@ -184,16 +184,21 @@ class Provider extends Category implements ProviderInterface
 
     public function suspend(SuspendParams $params): EmptyResult
     {
-        $command = "suspendlicense";
-
-        $body = [
-            'vars[license]' => $params->license_key
-        ];
         try {
-            $this->getLicense($params->license_key);
-            $this->makeRequest($command, null, $body, 'POST');
+            $licenseData = $this->getLicense($params->license_key);
 
-            return EmptyResult::create();
+            if ($licenseData['status'] === 'suspended') {
+                return EmptyResult::create()
+                    ->setMessage('License already suspended');
+            }
+
+            $body = [
+                'vars[license]' => $params->license_key
+            ];
+
+            $this->makeRequest('suspendlicense', null, $body, 'POST');
+
+            return EmptyResult::create()->setMessage('License suspended');
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
@@ -201,17 +206,21 @@ class Provider extends Category implements ProviderInterface
 
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
-        $command = "unsuspendlicense";
-
-        $body = [
-            'vars[license]' => $params->license_key
-        ];
-
         try {
-            $this->getLicense($params->license_key);
-            $this->makeRequest($command, null, $body, 'POST');
+            $licenseData = $this->getLicense($params->license_key);
 
-            return EmptyResult::create();
+            if ($licenseData['status'] === 'active') {
+                return EmptyResult::create()
+                    ->setMessage('License already active');
+            }
+
+            $body = [
+                'vars[license]' => $params->license_key
+            ];
+
+            $this->makeRequest('unsuspendlicense', null, $body, 'POST');
+
+            return EmptyResult::create()->setMessage('License unsuspended');
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
@@ -229,7 +238,7 @@ class Provider extends Category implements ProviderInterface
             $this->getLicense($params->license_key);
             $this->makeRequest($command, null, $body, 'POST');
 
-            return EmptyResult::create();
+            return EmptyResult::create()->setMessage('License cancelled');
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
