@@ -68,7 +68,7 @@ class Provider extends Category implements ProviderInterface
 
             return CreateResult::create(['license_key' => $response['response']]);
         } catch (\Throwable $e) {
-            $this->handleException($e, $params);
+            $this->handleException($e);
         }
     }
 
@@ -89,7 +89,7 @@ class Provider extends Category implements ProviderInterface
 
             return (string)$response['response'][0]['id'];
         } catch (\Throwable $e) {
-            $this->handleException($e, $params);
+            $this->handleException($e);
         }
     }
 
@@ -116,7 +116,7 @@ class Provider extends Category implements ProviderInterface
 
             throw $this->errorResult('License does not exist');
         } catch (\Throwable $e) {
-            $this->handleException($e, $params);
+            $this->handleException($e);
         }
     }
 
@@ -143,7 +143,7 @@ class Provider extends Category implements ProviderInterface
             ]);
 
         } catch (\Throwable $e) {
-            $this->handleException($e, $params);
+            $this->handleException($e);
         }
     }
 
@@ -160,7 +160,7 @@ class Provider extends Category implements ProviderInterface
 
             return EmptyResult::create();
         } catch (\Throwable $e) {
-            $this->handleException($e, $params);
+            $this->handleException($e);
         }
     }
 
@@ -178,7 +178,7 @@ class Provider extends Category implements ProviderInterface
 
             return EmptyResult::create();
         } catch (\Throwable $e) {
-            $this->handleException($e, $params);
+            $this->handleException($e);
         }
     }
 
@@ -196,7 +196,7 @@ class Provider extends Category implements ProviderInterface
 
             return EmptyResult::create();
         } catch (\Throwable $e) {
-            $this->handleException($e, $params);
+            $this->handleException($e);
         }
     }
 
@@ -262,14 +262,13 @@ class Provider extends Category implements ProviderInterface
         return $parsedResult;
     }
 
-    protected function handleException(Throwable $e, $params = null): void
+    /**
+     * @throws Throwable
+     *
+     * @return no-return
+     */
+    protected function handleException(Throwable $e): void
     {
-        if (!$e instanceof ProvisionFunctionError) {
-            $e = new ProvisionFunctionError('Unexpected Provider Error', $e->getCode(), $e);
-        }
-
-        throw $e->withDebug([
-            'params' => $params,
-        ]);
+        throw $e;
     }
 }
