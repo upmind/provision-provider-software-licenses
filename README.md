@@ -37,7 +37,8 @@ Alternatively you can start using it for your business immediately with [Upmind.
 
 The following providers are currently implemented:
   - Generic (a generic highly configurable provider)
-  - Enhance
+  - [Enhance](https://enhance.com/)
+  - [Blesta](https://docs.blesta.com/display/dev/Reseller+API)
 
 ## Functions
 
