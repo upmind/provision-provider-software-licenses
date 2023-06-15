@@ -8,6 +8,7 @@ use Upmind\ProvisionBase\Laravel\ProvisionServiceProvider;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Generic\Provider as GenericProvider;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Example\Provider as ExampleProvider;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Blesta\Provider as BlestaProvider;
+use Upmind\ProvisionProviders\SoftwareLicenses\Providers\WHMCS\Provider as WHMCSProvider;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
 {
@@ -19,5 +20,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
 
         $this->bindProvider('software-licenses', 'generic', GenericProvider::class);
         $this->bindProvider('software-licenses', 'blesta', BlestaProvider::class);
+        $this->bindProvider('software-licenses', 'whmcs', WHMCSProvider::class);
     }
 }
