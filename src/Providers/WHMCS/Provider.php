@@ -193,7 +193,6 @@ class Provider extends Category implements ProviderInterface
             'apikey' => $this->configuration->api_key,
         ], $params);
 
-
         $response = $this->client()->get('/v2/reseller/', ['query' => $params]);
         $result = $response->getBody()->getContents();
 
