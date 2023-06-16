@@ -39,6 +39,7 @@ The following providers are currently implemented:
   - Generic (a generic highly configurable provider)
   - [Enhance](https://enhance.com/)
   - [Blesta](https://docs.blesta.com/display/dev/Reseller+API)
+  - [WHMCS](https://assets.whmcs.com/reseller/api/whmcs-reseller-api-docs-v3.2.pdf)
 
 ## Functions
 
