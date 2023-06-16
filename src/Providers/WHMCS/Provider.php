@@ -67,7 +67,8 @@ class Provider extends Category implements ProviderInterface
 
             $response = $this->makeRequest($request);
 
-            return CreateResult::create(['license_key' => $response->licensekey])->setMessage('License created');
+            return CreateResult::create(['license_key' => (string)$response->licensekey])
+                ->setMessage('License created');
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
@@ -193,13 +194,15 @@ class Provider extends Category implements ProviderInterface
         ], $params);
 
 
-        $response = $this->client()->get('/v2/reseller', ['query' => $params]);
+        $response = $this->client()->get('/v2/reseller/', ['query' => $params]);
         $result = $response->getBody()->getContents();
 
         $response->getBody()->close();
 
         if (empty($result)) {
-            throw new RuntimeException('Empty provider api response');
+            throw $this->errorResult('Unexpected Empty Provider API response', [
+                'http_code' => $response->getStatusCode(),
+            ]);
         }
 
         return $this->parseResponseData($result);
@@ -211,17 +214,15 @@ class Provider extends Category implements ProviderInterface
         $xml = simplexml_load_string($result, 'SimpleXMLElement', LIBXML_NOCDATA);
 
         if ($xml === false) {
-            throw ProvisionFunctionError::create('Unknown Provider API Error')
-                ->withData([
-                    'response' => $result,
-                ]);
+            throw $this->errorResult('Unknown Provider API Error', [
+                'response_body' => $result,
+            ]);
         }
 
         if ($xml->result != 'success') {
-            throw ProvisionFunctionError::create((string)$xml->message)
-                ->withData([
-                    'response' => $xml,
-                ]);
+            throw $this->errorResult(sprintf('Provider API Error: %s', $xml->message), [
+                'response_body' => $result,
+            ]);
         }
 
         return $xml;
