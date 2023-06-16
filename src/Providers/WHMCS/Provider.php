@@ -220,7 +220,7 @@ class Provider extends Category implements ProviderInterface
 
         if ($xml->result != 'success') {
             throw $this->errorResult(sprintf('Provider API Error: %s', $xml->message), [
-                'response_body' => $result,
+                'response_data' => $xml,
             ]);
         }
 
