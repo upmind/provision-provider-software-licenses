@@ -9,7 +9,7 @@ use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionBase\Provider\DataSet\Rules;
 
 /**
- * @property-read mixed $license_key License key
+ * @property-read string $license_key License key
  * @property-read string|null $service_identifier Secondary service identifier, if any
  * @property-read string|null $package_identifier Service package identifier, if any
  * @property-read string|int|null $customer_identifier Service customer identifier, if any
@@ -19,7 +19,7 @@ class CreateResult extends ResultData
     public static function rules(): Rules
     {
         return new Rules([
-            'license_key' => ['filled'],
+            'license_key' => ['required', 'string'],
             'service_identifier' => ['nullable', 'string'],
             'package_identifier' => ['nullable', 'string'],
             'customer_identifier' => ['nullable'],
