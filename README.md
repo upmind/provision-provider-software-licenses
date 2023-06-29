@@ -1,4 +1,4 @@
-# Upmind Provision Providers - Software Licenses
+# [Upmind Provision Providers](https://github.com/upmind-automation) - Software Licenses
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/upmind/provision-provider-software-licenses.svg?style=flat-square)](https://packagist.org/packages/upmind/provision-provider-software-licenses)
 
