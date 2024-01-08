@@ -83,7 +83,7 @@ class Provider extends Category implements ProviderInterface
 
             return CreateResult::create(['license_key' => (string)$response['licenseid']])
                 ->setMessage('License created');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -101,7 +101,7 @@ class Provider extends Category implements ProviderInterface
             ];
 
             return (array)$this->makeRequest($command, $query);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -129,7 +129,7 @@ class Provider extends Category implements ProviderInterface
                 ->setLicenseKey($params->license_key)
                 ->setPackageIdentifier($params->package_identifier)
                 ->setMessage('Package changed');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -144,22 +144,37 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws Throwable
      */
     public function suspend(SuspendParams $params): EmptyResult
     {
-        return $this->expireLicense($params->license_key);
+        return $this->expireLicense($params->license_key, 'License suspended');
     }
 
     /**
      * @inheritDoc
+     *
+     * @throws Throwable
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
-        $this->errorResult('Operation not supported');
+        try {
+            $query = [
+                'liscid' => $params->license_key,
+            ];
+
+            $this->makeRequest('XMLlicenseReActivate', $query);
+            return EmptyResult::create()->setMessage('License unsuspended');
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
     }
 
     /**
      * @inheritDoc
+     *
+     * @throws Throwable
      */
     public function terminate(TerminateParams $params): EmptyResult
     {
@@ -259,8 +274,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * Expire a cPanel license.
+     *
+     * @throws Throwable
      */
-    private function expireLicense(string $licenseKey): EmptyResult
+    private function expireLicense(string $licenseKey, string $message = 'License cancelled'): EmptyResult
     {
         try {
             $query = [
@@ -268,8 +285,8 @@ class Provider extends Category implements ProviderInterface
             ];
 
             $this->makeRequest('XMLlicenseExpire', $query);
-            return EmptyResult::create()->setMessage('License cancelled');
-        } catch (\Throwable $e) {
+            return EmptyResult::create()->setMessage($message);
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
