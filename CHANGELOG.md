@@ -3,7 +3,8 @@
 All notable changes to the package will be documented in this file.
 
 ## [Unreleased]
-- Cpanel implementation
+
+- Implement Cpanel provider
 
 ## [v3.2](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.2) - 2023-06-16
 

@@ -147,7 +147,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function suspend(SuspendParams $params): EmptyResult
     {
-        $this->errorResult('Operation not supported');
+        return $this->expireLicense($params->license_key);
     }
 
     /**
@@ -163,16 +163,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function terminate(TerminateParams $params): EmptyResult
     {
-        try {
-            $query = [
-                'liscid' => $params->license_key,
-            ];
-
-            $this->makeRequest('XMLlicenseExpire', $query);
-            return EmptyResult::create()->setMessage('License cancelled');
-        } catch (\Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->expireLicense($params->license_key);
     }
 
     protected function client(): Client
@@ -190,7 +181,7 @@ class Provider extends Category implements ProviderInterface
             ],
             'connect_timeout' => 10,
             'timeout' => 60,
-            'handler' => $this->getGuzzleHandlerStack(boolval($this->configuration->debug)),
+            'handler' => $this->getGuzzleHandlerStack((bool) $this->configuration->debug),
         ]);
 
         return $this->client = $client;
@@ -264,5 +255,22 @@ class Provider extends Category implements ProviderInterface
         }
 
         return $errorMessage ?? null;
+    }
+
+    /**
+     * Expire a cPanel license.
+     */
+    private function expireLicense(string $licenseKey): EmptyResult
+    {
+        try {
+            $query = [
+                'liscid' => $licenseKey,
+            ];
+
+            $this->makeRequest('XMLlicenseExpire', $query);
+            return EmptyResult::create()->setMessage('License cancelled');
+        } catch (\Throwable $e) {
+            $this->handleException($e);
+        }
     }
 }
