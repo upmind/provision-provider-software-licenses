@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SoftwareLicenses\Providers\CPanel;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use Throwable;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -90,6 +91,8 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * Get license data by key.
+     *
+     * @throws Throwable
      */
     protected function getLicense(string $license_key): ?array
     {
@@ -149,6 +152,10 @@ class Provider extends Category implements ProviderInterface
      */
     public function suspend(SuspendParams $params): EmptyResult
     {
+        if (!$this->isLicenseActive($params->license_key)) {
+            return EmptyResult::create()->setMessage('License already suspended');
+        }
+
         return $this->expireLicense($params->license_key, 'License suspended');
     }
 
@@ -212,6 +219,9 @@ class Provider extends Category implements ProviderInterface
         throw $e;
     }
 
+    /**
+     * @throws GuzzleException
+     */
     public function makeRequest(string $command, ?array $params = null, ?string $method = 'GET'): ?array
     {
         $requestParams = [
@@ -273,6 +283,31 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
+     * Is a license active?
+     *
+     * A cPanel license can have different statuses where:
+     * 1 => Active
+     * 2 => Expired
+     * 4 => Suspended
+     *
+     * @throws Throwable
+     */
+    private function isLicenseActive(string $licenseKey): bool
+    {
+        $result = $this->getLicense($licenseKey);
+
+        $licenseStatus = $result['licenses']['L' . $licenseKey]['status'] ?? null;
+
+        /*
+         * A cPanel license can have different statuses where:
+         * 1 => Active
+         * 2 => Expired
+         * 4 => Suspended
+         */
+        return (int) $licenseStatus === 1;
+    }
+
+    /**
      * Expire a cPanel license.
      *
      * @throws Throwable
@@ -285,6 +320,7 @@ class Provider extends Category implements ProviderInterface
             ];
 
             $this->makeRequest('XMLlicenseExpire', $query);
+
             return EmptyResult::create()->setMessage($message);
         } catch (Throwable $e) {
             $this->handleException($e);
