@@ -64,7 +64,7 @@ class Provider extends Category implements ProviderInterface
     public function create(CreateParams $params): CreateResult
     {
         if (!isset($params->package_identifier)) {
-            throw $this->errorResult('Package identifier is required!');
+            $this->errorResult('Package identifier is required!');
         }
 
         try {
@@ -112,20 +112,18 @@ class Provider extends Category implements ProviderInterface
     public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
         if (!isset($params->package_identifier)) {
-            throw $this->errorResult('Package identifier is required!');
+            $this->errorResult('Package identifier is required!');
         }
 
         try {
-            $command = 'XMLpackageUpdate';
-
-            $license = $this->getLicense($params->license_key);
+            $result = $this->getLicense($params->license_key);
 
             $query = [
-                'ip' => $license['ip'],
+                'ip' => $result['licenses']['L' . $params->license_key]['ip'] ?? null,
                 'newpackageid' => $params->package_identifier
             ];
 
-            $this->makeRequest($command, $query);
+            $this->makeRequest('XMLpackageUpdate', $query);
 
             return ChangePackageResult::create()
                 ->setLicenseKey($params->license_key)
@@ -141,7 +139,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function reissue(ReissueParams $params): ReissueResult
     {
-        throw $this->errorResult('Operation not supported');
+        $this->errorResult('Operation not supported');
     }
 
     /**
@@ -149,7 +147,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function suspend(SuspendParams $params): EmptyResult
     {
-        throw $this->errorResult('Operation not supported');
+        $this->errorResult('Operation not supported');
     }
 
     /**
@@ -157,7 +155,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
-        throw $this->errorResult('Operation not supported');
+        $this->errorResult('Operation not supported');
     }
 
     /**
@@ -166,13 +164,11 @@ class Provider extends Category implements ProviderInterface
     public function terminate(TerminateParams $params): EmptyResult
     {
         try {
-            $command = "XMLlicenseExpire";
-
             $query = [
                 'liscid' => $params->license_key,
             ];
 
-            $this->makeRequest($command, $query);
+            $this->makeRequest('XMLlicenseExpire', $query);
             return EmptyResult::create()->setMessage('License cancelled');
         } catch (\Throwable $e) {
             $this->handleException($e);
