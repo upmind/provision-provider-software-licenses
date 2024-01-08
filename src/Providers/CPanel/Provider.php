@@ -119,10 +119,10 @@ class Provider extends Category implements ProviderInterface
         }
 
         try {
-            $result = $this->getLicense($params->license_key);
+            $licenseData = $this->getLicense($params->license_key);
 
             $query = [
-                'ip' => $result['licenses']['L' . $params->license_key]['ip'] ?? null,
+                'ip' => $licenseData['licenses']['L' . $params->license_key]['ip'] ?? null,
                 'newpackageid' => $params->package_identifier
             ];
 
@@ -189,6 +189,10 @@ class Provider extends Category implements ProviderInterface
      */
     public function terminate(TerminateParams $params): EmptyResult
     {
+        if (!$this->isLicenseActive($params->license_key)) {
+            return EmptyResult::create()->setMessage('License already cancelled');
+        }
+
         return $this->expireLicense($params->license_key);
     }
 
@@ -298,9 +302,9 @@ class Provider extends Category implements ProviderInterface
      */
     private function isLicenseActive(string $licenseKey): bool
     {
-        $result = $this->getLicense($licenseKey);
+        $licenseData = $this->getLicense($licenseKey);
 
-        $licenseStatus = $result['licenses']['L' . $licenseKey]['status'] ?? null;
+        $licenseStatus = $licenseData['licenses']['L' . $licenseKey]['status'] ?? null;
 
         /*
          * A cPanel license can have different statuses where:
