@@ -166,6 +166,10 @@ class Provider extends Category implements ProviderInterface
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
+        if ($this->isLicenseActive($params->license_key)) {
+            return EmptyResult::create()->setMessage('License already active');
+        }
+
         try {
             $query = [
                 'liscid' => $params->license_key,
@@ -304,7 +308,7 @@ class Provider extends Category implements ProviderInterface
          * 2 => Expired
          * 4 => Suspended
          */
-        return (int) $licenseStatus === 1;
+        return $licenseStatus !== null && (int) $licenseStatus === 1;
     }
 
     /**
