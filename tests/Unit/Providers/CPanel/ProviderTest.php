@@ -32,5 +32,10 @@ class ProviderTest extends TestCase
         $this->provider->reissue($this->reissueParams);
     }
 
+    public function testReissueIsNotSupportedMessage(): void
+    {
+        $this->expectExceptionMessage('Operation not supported');
 
+        $this->provider->reissue($this->reissueParams);
+    }
 }
