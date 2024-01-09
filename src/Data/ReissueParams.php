@@ -10,6 +10,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
 /**
  * @property-read mixed $license_key License key
  * @property-read string|int|null $customer_identifier Service customer identifier, if any
+ * @property-read string|null $ip IP address
  */
 class ReissueParams extends DataSet
 {
@@ -18,6 +19,7 @@ class ReissueParams extends DataSet
         return new Rules([
             'license_key' => ['required'],
             'customer_identifier' => ['nullable'],
+            'ip' => ['nullable', 'ip'],
         ]);
     }
 }

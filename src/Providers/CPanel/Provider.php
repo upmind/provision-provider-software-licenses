@@ -139,10 +139,26 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws Throwable
      */
     public function reissue(ReissueParams $params): ReissueResult
     {
-        $this->errorResult('Operation not supported');
+        $licenseData = $this->getLicense($params->license_key);
+
+        try {
+            $query = [
+                'oldip' => $licenseData['licenses']['L' . $params->license_key]['ip'] ?? null,
+                'newip' => $params->ip,
+                'packageid' => $licenseData['licenses']['L' . $params->license_key]['packageid'] ?? null,
+            ];
+
+            $this->makeRequest('XMLtransfer', $query);
+
+            return ReissueResult::create(['license_key' => $params->license_key])->setMessage('License reissued');
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
     }
 
     /**
@@ -280,7 +296,7 @@ class Provider extends Category implements ProviderInterface
         $status = $responseData['status'] ?? null;
 
         if ($status == 0) {
-            if (isset($responseData['reason']) && $responseData['reason'] == 'Empty license.') {
+            if (isset($responseData['reason']) && $responseData['reason'] === 'Empty license.') {
                 $errorMessage = 'License does not exist';
             } else {
                 $errorMessage = $responseData['reason'] ?? null;
