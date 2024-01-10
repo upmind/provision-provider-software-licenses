@@ -17,7 +17,7 @@
         "upmind/provision-provider-base": "^3.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8 || ^9 || ^10"
+        "phpunit/phpunit": "^8 || ^9"
     },
     "autoload": {
         "psr-4": {
