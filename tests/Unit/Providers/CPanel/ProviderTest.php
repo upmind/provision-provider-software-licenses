@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ReissueParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\SuspendParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\CPanel\Provider;
@@ -49,6 +50,24 @@ class ProviderTest extends TestCase
             ->getMock();
 
         $this->provider->method('client')->willReturn($this->client);
+    }
+
+    public function testCannotCreateIfPackageIdentifierIsNotSet(): void
+    {
+        $this->expectException(ProvisionFunctionError::class);
+
+        $createParams = $this->createMock(CreateParams::class);
+
+        $this->provider->create($createParams);
+    }
+
+    public function testCannotCreateMessageIfPackageIdentifierIsNotSet(): void
+    {
+        $this->expectExceptionMessage('Package identifier is required!');
+
+        $createParams = $this->createMock(CreateParams::class);
+
+        $this->provider->create($createParams);
     }
 
     public function testReissueIsNotSupported(): void
