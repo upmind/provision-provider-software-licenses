@@ -91,39 +91,6 @@ class ProviderTest extends TestCase
     /**
      * @throws \Throwable
      */
-    public function testCannotSuspendInactiveLicense(): void
-    {
-        $suspendParams = $this->createMock(SuspendParams::class);
-
-        $licenseKey = Str::random(6);
-
-        $suspendParams->expects($this->once())
-            ->method('__get')
-            ->with('license_key')
-            ->willReturn($licenseKey);
-
-        $responseData = [
-            'licenses' => [
-                'L' . $licenseKey => [
-                    'status' => $this->inactiveLicenseStatus[array_rand($this->inactiveLicenseStatus)]
-                ]
-            ]
-        ];
-
-        $this->client->expects($this->once())->method('request')->willReturn(new Response(
-            200,
-            ['Content-Type' => 'application/json'],
-            json_encode($responseData, JSON_THROW_ON_ERROR)
-        ));
-
-        $result = $this->provider->suspend($suspendParams);
-
-        $this->assertSame('License already suspended', $result->getMessage());
-    }
-
-    /**
-     * @throws \Throwable
-     */
     public function testSuspendInactiveLicense(): void
     {
         $suspendParams = $this->createMock(SuspendParams::class);
@@ -163,5 +130,38 @@ class ProviderTest extends TestCase
         $result = $this->provider->suspend($suspendParams);
 
         $this->assertSame('License suspended', $result->getMessage());
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function testCannotSuspendInactiveLicense(): void
+    {
+        $suspendParams = $this->createMock(SuspendParams::class);
+
+        $licenseKey = Str::random(6);
+
+        $suspendParams->expects($this->once())
+            ->method('__get')
+            ->with('license_key')
+            ->willReturn($licenseKey);
+
+        $responseData = [
+            'licenses' => [
+                'L' . $licenseKey => [
+                    'status' => $this->inactiveLicenseStatus[array_rand($this->inactiveLicenseStatus)]
+                ]
+            ]
+        ];
+
+        $this->client->expects($this->once())->method('request')->willReturn(new Response(
+            200,
+            ['Content-Type' => 'application/json'],
+            json_encode($responseData, JSON_THROW_ON_ERROR)
+        ));
+
+        $result = $this->provider->suspend($suspendParams);
+
+        $this->assertSame('License already suspended', $result->getMessage());
     }
 }
