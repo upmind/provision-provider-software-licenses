@@ -45,7 +45,7 @@ These are the acceptance criteria for new providers.
 
 ## Testing
 
-The project provides a basic docker example that will allow you to add & perform unit tests.
+The project provides a basic docker example that will allow you to add & perform unit tests in isolation.
 
 1. You will need docker installed on your system & execute the following commands on the project's root on your terminal.
 2. Copy & rename `docker-compose.yml.example` tp `docker-compose.yml` -> `cp docker-compose.yml.example docker-compose.yml`
