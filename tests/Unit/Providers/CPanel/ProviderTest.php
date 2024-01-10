@@ -26,6 +26,17 @@ class ProviderTest extends TestCase
      */
     private Provider $provider;
 
+    /**
+     * 1 => Active
+     */
+    private int $activeLicenseStatus = 1;
+
+    /**
+     * 2 => Expired
+     * 4 => Suspended
+     */
+    private array $inactiveLicenseStatus = [2, 4];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -75,7 +86,7 @@ class ProviderTest extends TestCase
         $responseData = [
             'licenses' => [
                 'L' . $licenseKey => [
-                    'status' => $this->getInactiveLicenseStatus()
+                    'status' => $this->inactiveLicenseStatus[array_rand($this->inactiveLicenseStatus)]
                 ]
             ]
         ];
@@ -92,10 +103,46 @@ class ProviderTest extends TestCase
     }
 
     /**
-     * Get a status that maps an inactive license.
+     * @throws \Throwable
      */
-    private function getInactiveLicenseStatus(): int
+    public function testSuspendInactiveLicense(): void
     {
-        return array_rand([2, 4]);
+        $suspendParams = $this->createMock(SuspendParams::class);
+
+        $licenseKey = Str::random(6);
+
+        $suspendParams->expects($this->exactly(2))
+            ->method('__get')
+            ->with('license_key')
+            ->willReturn($licenseKey);
+
+        $licenseResponseData = [
+            'licenses' => [
+                'L' . $licenseKey => [
+                    'status' => $this->activeLicenseStatus
+                ]
+            ]
+        ];
+
+        $expireLicenseResponseData = [
+            'licenseid' => $licenseKey
+        ];
+
+        $this->client->expects($this->exactly(2))->method('request')->willReturn(
+            new Response(
+                200,
+                ['Content-Type' => 'application/json'],
+                json_encode($licenseResponseData, JSON_THROW_ON_ERROR)
+            ),
+            new Response(
+                200,
+                ['Content-Type' => 'application/json'],
+                json_encode($expireLicenseResponseData, JSON_THROW_ON_ERROR)
+            ),
+        );
+
+        $result = $this->provider->suspend($suspendParams);
+
+        $this->assertSame('License suspended', $result->getMessage());
     }
 }
