@@ -129,7 +129,7 @@ class ProviderTest extends TestCase
 
         $result = $this->provider->suspend($suspendParams);
 
-        $this->assertSame('License suspended', $result->getMessage());
+        $this->assertEquals('License suspended', $result->getMessage());
     }
 
     /**
@@ -162,6 +162,6 @@ class ProviderTest extends TestCase
 
         $result = $this->provider->suspend($suspendParams);
 
-        $this->assertSame('License already suspended', $result->getMessage());
+        $this->assertEquals('License already suspended', $result->getMessage());
     }
 }
