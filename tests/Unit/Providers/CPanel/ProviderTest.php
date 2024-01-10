@@ -133,6 +133,10 @@ class ProviderTest extends TestCase
     }
 
     /**
+     * The following test works because the result object `EmptyResult` does not have any validation rules.
+     * Otherwise, the test would fail as results with rules,
+     * rely on Laravel Facade Validator instance which cannot be instantiated on Unit Tests.
+     *
      * @throws \Throwable
      */
     public function testCannotSuspendInactiveLicense(): void
