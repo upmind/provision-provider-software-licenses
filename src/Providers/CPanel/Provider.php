@@ -306,12 +306,6 @@ class Provider extends Category implements ProviderInterface
 
         $licenseStatus = $licenseData['licenses']['L' . $licenseKey]['status'] ?? null;
 
-        /*
-         * A cPanel license can have different statuses where:
-         * 1 => Active
-         * 2 => Expired
-         * 4 => Suspended
-         */
         return $licenseStatus !== null && (int) $licenseStatus === 1;
     }
 
