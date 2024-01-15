@@ -52,7 +52,8 @@ The project provides a basic docker example that will allow you to add & perform
 3. Copy & rename `.docker/Dockerfile.example` tp `.docker/Dockerfile` -> `cp .docker/Dockerfile.example .docker/Dockerfile`
 4. Load the container -> `docker compose up -d`
 5. Enter the container -> `docker exec -it app /bin/bash`
-6. Once inside the container `./vendor/phpunit/phpunit/phpunit`
+6. Install composer packages -> `composer install`
+7. Run tests -> `./vendor/bin/phpunit`
 
 Currently, the project is using Laravel Validation rules and relies on the relevant Facade.
 As such, Unit Testing is not supported when the method triggers a `Dataset` object that includes validation rules.
