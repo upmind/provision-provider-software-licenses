@@ -10,7 +10,6 @@ use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Arr;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
-use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionProviders\SoftwareLicenses\Category;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageResult;
@@ -151,7 +150,7 @@ class Provider extends Category implements ProviderInterface
         $handler = new DefaultResponseHandler($this->request($method, $endpointUrl, $requestParams));
         $handler->assertResponseSuccess();
 
-        return ResultData::create();
+        return EmptyResult::create();
     }
 
     /**
@@ -172,7 +171,7 @@ class Provider extends Category implements ProviderInterface
         $handler = new DefaultResponseHandler($this->request($method, $endpointUrl, $requestParams));
         $handler->assertResponseSuccess();
 
-        return ResultData::create();
+        return EmptyResult::create();
     }
 
     /**
@@ -193,7 +192,7 @@ class Provider extends Category implements ProviderInterface
         $handler = new DefaultResponseHandler($this->request($method, $endpointUrl, $requestParams));
         $handler->assertResponseSuccess();
 
-        return ResultData::create();
+        return EmptyResult::create();
     }
 
     protected function request(string $method, string $uri, array $requestParams): Response
