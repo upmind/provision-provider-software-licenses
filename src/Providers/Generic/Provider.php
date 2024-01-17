@@ -101,8 +101,8 @@ class Provider extends Category implements ProviderInterface
             $this->errorResult('No usage data endpoint set in this configuration');
         }
 
-        $method = strtoupper($this->configuration->create_endpoint_http_method);
-        $endpointUrl = $this->configuration->create_endpoint_url;
+        $method = strtoupper($this->configuration->get_usage_data_endpoint_http_method);
+        $endpointUrl = $this->configuration->get_usage_data_endpoint_url;
 
         $requestParams = $params->toArray();
         $requestParams = array_merge($requestParams, Arr::pull($requestParams, 'extra', [])); // merge extra params
