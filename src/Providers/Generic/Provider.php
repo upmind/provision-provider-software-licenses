@@ -76,7 +76,7 @@ class Provider extends Category implements ProviderInterface
     public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
         if (!$this->configuration->has_change_package) {
-            return $this->errorResult('No change package endpoint set in this configuration');
+            $this->errorResult('No change package endpoint set in this configuration');
         }
 
         $method = strtoupper($this->configuration->change_package_endpoint_http_method);
@@ -98,7 +98,7 @@ class Provider extends Category implements ProviderInterface
     public function getUsageData(GetUsageParams $params): GetUsageResult
     {
         if (!$this->configuration->has_usage_data) {
-            return $this->errorResult('No usage data endpoint set in this configuration');
+            $this->errorResult('No usage data endpoint set in this configuration');
         }
 
         $method = strtoupper($this->configuration->create_endpoint_http_method);
@@ -120,7 +120,7 @@ class Provider extends Category implements ProviderInterface
     public function reissue(ReissueParams $params): ReissueResult
     {
         if (!$this->configuration->has_usage_data) {
-            return $this->errorResult('Reissuance of this license is not possible');
+            $this->errorResult('Reissuance of this license is not possible');
         }
 
         $method = strtoupper($this->configuration->reissue_endpoint_http_method);
@@ -138,7 +138,7 @@ class Provider extends Category implements ProviderInterface
     public function suspend(SuspendParams $params): EmptyResult
     {
         if (!$this->configuration->has_suspension) {
-            return $this->errorResult('No suspend endpoint set in this configuration');
+            $this->errorResult('No suspend endpoint set in this configuration');
         }
 
         $method = strtoupper($this->configuration->suspend_endpoint_http_method);
@@ -159,7 +159,7 @@ class Provider extends Category implements ProviderInterface
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
         if (!$this->configuration->has_suspension) {
-            return $this->errorResult('No unsuspend endpoint set in this configuration');
+            $this->errorResult('No unsuspend endpoint set in this configuration');
         }
 
         $method = strtoupper($this->configuration->unsuspend_endpoint_http_method);
@@ -180,7 +180,7 @@ class Provider extends Category implements ProviderInterface
     public function terminate(TerminateParams $params): EmptyResult
     {
         if (!$this->configuration->has_terminate) {
-            return $this->errorResult('No terminate endpoint set in this configuration');
+            $this->errorResult('No terminate endpoint set in this configuration');
         }
 
         $method = strtoupper($this->configuration->terminate_endpoint_http_method);
