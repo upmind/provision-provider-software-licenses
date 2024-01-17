@@ -179,7 +179,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function terminate(TerminateParams $params): EmptyResult
     {
-        if (!$this->configuration->has_terminate) {
+        if (!$this->configuration->has_termination) {
             $this->errorResult('No terminate endpoint set in this configuration');
         }
 
