@@ -119,7 +119,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function reissue(ReissueParams $params): ReissueResult
     {
-        if (!$this->configuration->has_usage_data) {
+        if (!$this->configuration->has_reissue) {
             $this->errorResult('Reissuance of this license is not possible');
         }
 
