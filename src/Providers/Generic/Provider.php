@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SoftwareLicenses\Providers\Generic;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Arr;
+use Psr\Http\Message\ResponseInterface;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SoftwareLicenses\Category;
@@ -195,7 +195,7 @@ class Provider extends Category implements ProviderInterface
         return EmptyResult::create();
     }
 
-    protected function request(string $method, string $uri, array $requestParams): Response
+    protected function request(string $method, string $uri, array $requestParams): ResponseInterface
     {
         return $this->client()->request($method, $uri, $this->getRequestOptions($method, $requestParams));
     }
