@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SoftwareLicenses\Providers\Generic;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Arr;
+use Psr\Http\Message\ResponseInterface;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
-use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionProviders\SoftwareLicenses\Category;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageResult;
@@ -77,7 +76,7 @@ class Provider extends Category implements ProviderInterface
     public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
         if (!$this->configuration->has_change_package) {
-            return $this->errorResult('No change package endpoint set in this configuration');
+            $this->errorResult('No change package endpoint set in this configuration');
         }
 
         $method = strtoupper($this->configuration->change_package_endpoint_http_method);
@@ -99,11 +98,11 @@ class Provider extends Category implements ProviderInterface
     public function getUsageData(GetUsageParams $params): GetUsageResult
     {
         if (!$this->configuration->has_usage_data) {
-            return $this->errorResult('No usage data endpoint set in this configuration');
+            $this->errorResult('No usage data endpoint set in this configuration');
         }
 
-        $method = strtoupper($this->configuration->create_endpoint_http_method);
-        $endpointUrl = $this->configuration->create_endpoint_url;
+        $method = strtoupper($this->configuration->get_usage_data_endpoint_http_method);
+        $endpointUrl = $this->configuration->get_usage_data_endpoint_url;
 
         $requestParams = $params->toArray();
         $requestParams = array_merge($requestParams, Arr::pull($requestParams, 'extra', [])); // merge extra params
@@ -120,8 +119,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function reissue(ReissueParams $params): ReissueResult
     {
-        if (!$this->configuration->has_usage_data) {
-            return $this->errorResult('Reissuance of this license is not possible');
+        if (!$this->configuration->has_reissue) {
+            $this->errorResult('Reissuance of this license is not possible');
         }
 
         $method = strtoupper($this->configuration->reissue_endpoint_http_method);
@@ -139,7 +138,7 @@ class Provider extends Category implements ProviderInterface
     public function suspend(SuspendParams $params): EmptyResult
     {
         if (!$this->configuration->has_suspension) {
-            return $this->errorResult('No suspend endpoint set in this configuration');
+            $this->errorResult('No suspend endpoint set in this configuration');
         }
 
         $method = strtoupper($this->configuration->suspend_endpoint_http_method);
@@ -151,7 +150,7 @@ class Provider extends Category implements ProviderInterface
         $handler = new DefaultResponseHandler($this->request($method, $endpointUrl, $requestParams));
         $handler->assertResponseSuccess();
 
-        return ResultData::create();
+        return EmptyResult::create();
     }
 
     /**
@@ -160,7 +159,7 @@ class Provider extends Category implements ProviderInterface
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
         if (!$this->configuration->has_suspension) {
-            return $this->errorResult('No unsuspend endpoint set in this configuration');
+            $this->errorResult('No unsuspend endpoint set in this configuration');
         }
 
         $method = strtoupper($this->configuration->unsuspend_endpoint_http_method);
@@ -172,7 +171,7 @@ class Provider extends Category implements ProviderInterface
         $handler = new DefaultResponseHandler($this->request($method, $endpointUrl, $requestParams));
         $handler->assertResponseSuccess();
 
-        return ResultData::create();
+        return EmptyResult::create();
     }
 
     /**
@@ -180,8 +179,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function terminate(TerminateParams $params): EmptyResult
     {
-        if (!$this->configuration->has_terminate) {
-            return $this->errorResult('No terminate endpoint set in this configuration');
+        if (!$this->configuration->has_termination) {
+            $this->errorResult('No terminate endpoint set in this configuration');
         }
 
         $method = strtoupper($this->configuration->terminate_endpoint_http_method);
@@ -193,10 +192,10 @@ class Provider extends Category implements ProviderInterface
         $handler = new DefaultResponseHandler($this->request($method, $endpointUrl, $requestParams));
         $handler->assertResponseSuccess();
 
-        return ResultData::create();
+        return EmptyResult::create();
     }
 
-    protected function request(string $method, string $uri, array $requestParams): Response
+    protected function request(string $method, string $uri, array $requestParams): ResponseInterface
     {
         return $this->client()->request($method, $uri, $this->getRequestOptions($method, $requestParams));
     }
@@ -226,7 +225,7 @@ class Provider extends Category implements ProviderInterface
     {
         return new Client([
             RequestOptions::HTTP_ERRORS => false,
-            'handler' => $this->getGuzzleHandlerStack(!!$this->configuration->debug),
+            'handler' => $this->getGuzzleHandlerStack((bool) $this->configuration->debug),
         ]);
     }
 }
