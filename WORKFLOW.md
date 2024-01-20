@@ -56,4 +56,4 @@ The project provides a basic docker example that will allow you to add & perform
 7. Run tests -> `./vendor/bin/phpunit`
 
 Currently, the project is using Laravel Validation rules and relies on the relevant Facade.
-As such, Unit Testing is not supported when the method triggers a `Dataset` object that includes validation rules.
+As a result, Unit Testing is not supported when the method triggers a `Dataset` object that includes validation rules.
