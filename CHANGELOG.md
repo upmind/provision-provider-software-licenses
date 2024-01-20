@@ -2,6 +2,13 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v3.2.1](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.2.1) - 2024-01-20
+
+- Fix various Generic provider bugs:
+  - Return EmptyResult where appropriate
+  - Fix incorrect provision configuration property names
+  - Fix incorrect usage of provision configuration properties
+
 ## [v3.2](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.2) - 2023-06-16
 
 - Implement WHMCS provider
