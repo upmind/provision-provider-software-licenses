@@ -33,6 +33,9 @@ class Provider extends Category implements ProviderInterface
     protected Configuration $configuration;
     protected Client $client;
 
+    public const STATUS_ACTIVE = 1;
+    public const STATUS_EXPIRED = 2;
+    public const STATUS_SUSPENDED = 4;
 
     public function __construct(Configuration $configuration)
     {
@@ -152,10 +155,11 @@ class Provider extends Category implements ProviderInterface
      */
     public function suspend(SuspendParams $params): EmptyResult
     {
-        if (!$this->isLicenseActive($params->license_key)) {
+        if ($this->isLicenseSuspended($params->license_key)) {
             return EmptyResult::create()->setMessage('License already suspended');
         }
 
+        // All we can do is expire the license
         return $this->expireLicense($params->license_key, 'License suspended');
     }
 
@@ -189,8 +193,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function terminate(TerminateParams $params): EmptyResult
     {
-        if (!$this->isLicenseActive($params->license_key)) {
-            return EmptyResult::create()->setMessage('License already cancelled');
+        if ($this->isLicenseExpired($params->license_key)) {
+            return EmptyResult::create()->setMessage('License already expired');
         }
 
         return $this->expireLicense($params->license_key);
@@ -293,21 +297,42 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * Is a license active?
-     *
-     * A cPanel license can have different statuses where:
-     * 1 => Active
-     * 2 => Expired
-     * 4 => Suspended
-     *
-     * @throws Throwable
      */
     private function isLicenseActive(string $licenseKey): bool
     {
+        return $this->getLicenseStatus($licenseKey) === self::STATUS_ACTIVE;
+    }
+
+    /**
+     * Is a license suspended?
+     */
+    private function isLicenseSuspended(string $licenseKey): bool
+    {
+        // since suspended licenses are also expired, we need to check for both statuses
+        return in_array($this->getLicenseStatus($licenseKey), [self::STATUS_SUSPENDED, self::STATUS_EXPIRED]);
+    }
+
+    /**
+     * Is a license expired?
+     */
+    private function isLicenseExpired(string $licenseKey): bool
+    {
+        return $this->getLicenseStatus($licenseKey) === self::STATUS_EXPIRED;
+    }
+
+    /**
+     * Get license status integer; one of self::STATUS_ACTIVE, self::STATUS_SUSPENDED, self::STATUS_EXPIRED.
+     */
+    private function getLicenseStatus(string $licenseKey): int
+    {
         $licenseData = $this->getLicense($licenseKey);
+        $status = $licenseData['licenses']['L' . $licenseKey]['status'] ?? null;
 
-        $licenseStatus = $licenseData['licenses']['L' . $licenseKey]['status'] ?? null;
+        if ($status === null) {
+            throw $this->errorResult('Unable to determine license status');
+        }
 
-        return $licenseStatus !== null && (int) $licenseStatus === 1;
+        return (int)$status;
     }
 
     /**
