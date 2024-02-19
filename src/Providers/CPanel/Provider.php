@@ -234,6 +234,7 @@ class Provider extends Category implements ProviderInterface
     {
         $requestParams = [
             'query' => [],
+            'http_errors' => false,
         ];
 
         if ($params) {
