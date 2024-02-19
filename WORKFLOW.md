@@ -42,3 +42,18 @@ These are the acceptance criteria for new providers.
 - Additional information or helpful metadata (e.g. raw API response data) should be returned in successful result debug or error data/debug
 - Any changes to `src/Category.php` or in `src/Data/` must be discussed with Upmind prior to the PR
 - Any new 3rd-party dependencies/libraries must be approved by Upmind
+
+## Testing
+
+The project provides a basic docker example that will allow you to add & perform unit tests in isolation.
+
+1. You will need docker installed on your system & execute the following commands on the project's root on your terminal.
+2. Copy & rename `docker-compose.yml.example` to `docker-compose.yml` -> `cp docker-compose.yml.example docker-compose.yml`
+3. Copy & rename `.docker/Dockerfile.example` to `.docker/Dockerfile` -> `cp .docker/Dockerfile.example .docker/Dockerfile`
+4. Load the container -> `docker compose up -d`
+5. Enter the container -> `docker exec -it app /bin/bash`
+6. Install composer packages -> `composer install`
+7. Run tests -> `./vendor/bin/phpunit`
+
+Currently, the project is using Laravel Validation rules and relies on the relevant Facade.
+As a result, Unit Testing is not supported when the method triggers a `Dataset` object that includes validation rules.

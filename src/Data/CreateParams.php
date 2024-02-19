@@ -14,6 +14,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read string|int|null $customer_identifier Service customer identifier, if already created
  * @property-read string|null $service_identifier Secondary service identifier to use, if known up-front
  * @property-read string|null $package_identifier Service package identifier, if any
+ * @property-read string|null $ip IP address
  * @property-read mixed[]|null $extra Any extra data to pass to the service endpoint
  */
 class CreateParams extends DataSet
@@ -27,6 +28,7 @@ class CreateParams extends DataSet
             'customer_identifier' => ['nullable'],
             'service_identifier' => ['nullable', 'string'],
             'package_identifier' => ['nullable', 'string'],
+            'ip' => ['nullable', 'ip'],
             'extra' => ['nullable', 'array'],
         ]);
     }
