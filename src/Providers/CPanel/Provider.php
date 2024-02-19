@@ -47,7 +47,7 @@ class Provider extends Category implements ProviderInterface
         return AboutData::create()
             ->setName('CPanel')
             ->setLogoUrl('https://api.upmind.io/images/logos/provision/cpanel-logo.png')
-            ->setDescription('Resell, provision and manage CPanel licenses');
+            ->setDescription('Resell, provision and manage cPanel licenses with manage2');
     }
 
     /**
