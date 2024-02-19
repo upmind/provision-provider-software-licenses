@@ -2,12 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
-## [Unreleased]
+## [v3.3](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.3) - 2024-02-19
 
 - Implement cPanel provider
 - Added basic Unit Test functionality for cPanel Provider
 - Added docker examples to support automated testing
-
 
 ## [v3.2.1](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.2.1) - 2024-01-20
 
