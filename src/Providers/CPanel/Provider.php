@@ -97,7 +97,7 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws Throwable
      */
-    protected function getLicense(string $license_key): ?array
+    protected function getLicense(string $license_key, bool $getExpired = false, bool $orFail = true): ?array
     {
         try {
             $command = 'XMLlicenseInfo';
@@ -106,7 +106,23 @@ class Provider extends Category implements ProviderInterface
                 "liscid" => $license_key,
             ];
 
-            return (array)$this->makeRequest($command, $query);
+            if ($getExpired) {
+                $query["expired"] = 1; // return expired licenses only
+            }
+
+            $data = (array)$this->makeRequest($command, $query);
+
+            if (empty($data['licenses']['L' . $license_key])) {
+                if (!$getExpired) {
+                    return $this->getLicense($license_key, true); // try to get expired license
+                }
+
+                if ($orFail) {
+                    $this->errorResult('License not found');
+                }
+            }
+
+            return $data;
         } catch (Throwable $e) {
             $this->handleException($e);
         }
