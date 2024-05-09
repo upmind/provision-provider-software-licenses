@@ -1,20 +1,22 @@
 # Composer
-/vendor/
 composer.lock
+vendor/
 
 # Tools
 .php-cs-fixer.cache
+phpunit.xml
+phpstan.neon
+.phpunit.result.cache
+.phpunit.cache/
 
 # Docker
-docker-compose.yml
 .docker/Dockerfile
+docker-compose.yml
 
-# PHPUnit
-/tests/report/
-clover.xml
-phpunit.xml
-.phpunit.result.cache
-
-# IDE & System
+# IDE
+.vscode/
 .idea/
+
+# System
 .DS_Store
+error_log
