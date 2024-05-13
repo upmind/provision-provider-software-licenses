@@ -12,7 +12,6 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  *
  * @property-read string $username Username
  * @property-read string $password Password
- * @property-read bool|null $debug Whether or not to log api calls
  */
 class Configuration extends DataSet
 {
@@ -21,7 +20,6 @@ class Configuration extends DataSet
         return new Rules([
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
-            'debug' => ['nullable', 'boolean']
         ]);
     }
 }

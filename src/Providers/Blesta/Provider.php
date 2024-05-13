@@ -6,7 +6,6 @@ namespace Upmind\ProvisionProviders\SoftwareLicenses\Providers\Blesta;
 
 use Throwable;
 use GuzzleHttp\Client;
-use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SoftwareLicenses\Category;
@@ -52,10 +51,14 @@ class Provider extends Category implements ProviderInterface
             ->setUsageData($this->getLicense($params->license_key));
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function create(CreateParams $params): CreateResult
     {
         if (!isset($params->package_identifier)) {
-            throw $this->errorResult('Package identifier is required!');
+            $this->errorResult('Package identifier is required!');
         }
 
         $command = "addlicense";
@@ -75,6 +78,9 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @param string $package Package ID or name
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     protected function getPackagePricingId(string $package): string
     {
@@ -96,7 +102,7 @@ class Provider extends Category implements ProviderInterface
             $response = $this->makeRequest($command, $params);
 
             if ($response['response'] == []) {
-                throw $this->errorResult('Package pricing not found');
+                $this->errorResult('Package pricing not found');
             }
 
             return (string)$response['response'][0]['id'];
@@ -107,13 +113,16 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @param string $package Package ID or name
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function getPackage(string $package): array
     {
         $response = $this->makeRequest('getpackages');
 
         if (empty($response['response'])) {
-            throw $this->errorResult('No license packages available');
+            $this->errorResult('No license packages available');
         }
 
         foreach ($response['response'] as $packageData) {
@@ -122,11 +131,14 @@ class Provider extends Category implements ProviderInterface
             }
         }
 
-        throw $this->errorResult('Package not found');
+        $this->errorResult('Package not found');
     }
 
     /**
      * Get license data by key.
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     protected function getLicense(string $license_key): array
     {
@@ -140,7 +152,7 @@ class Provider extends Category implements ProviderInterface
             $response = $this->makeRequest($command, $params);
 
             if ($response['response'] == []) {
-                throw $this->errorResult('License not found');
+                $this->errorResult('License not found');
             }
 
             foreach ($response['response'] as $license) {
@@ -149,17 +161,23 @@ class Provider extends Category implements ProviderInterface
                 }
             }
 
-            throw $this->errorResult('License not found');
+            $this->errorResult('License not found');
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
-        throw $this->errorResult('Operation not supported');
+        $this->errorResult('Operation not supported');
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function reissue(ReissueParams $params): ReissueResult
     {
         $command = "update";
@@ -181,6 +199,9 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function suspend(SuspendParams $params): EmptyResult
     {
         try {
@@ -203,6 +224,9 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
         try {
@@ -225,6 +249,9 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function terminate(TerminateParams $params): EmptyResult
     {
         $command = "cancellicense";
@@ -259,12 +286,15 @@ class Provider extends Category implements ProviderInterface
             ],
             'connect_timeout' => 10,
             'timeout' => 60,
-            'handler' => $this->getGuzzleHandlerStack(boolval($this->configuration->debug)),
+            'handler' => $this->getGuzzleHandlerStack(),
         ]);
 
         return $this->client = $client;
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function makeRequest(string $command, ?array $params = null, ?array $body = null, ?string $method = 'GET'): ?array
     {
         $requestParams = [];
@@ -289,11 +319,14 @@ class Provider extends Category implements ProviderInterface
         return $this->parseResponseData($result);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     private function parseResponseData(string $result): array
     {
         $parsedResult = json_decode($result, true);
 
-        if (!$parsedResult && $parsedResult != []) {
+        if (!$parsedResult && $parsedResult !== []) {
             throw ProvisionFunctionError::create('Unknown Provider API Error')
                 ->withData([
                     'response' => $result,
@@ -304,7 +337,7 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @throws Throwable
+     * @throws \Throwable
      *
      * @return no-return
      */

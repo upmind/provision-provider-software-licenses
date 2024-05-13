@@ -7,7 +7,6 @@ namespace Upmind\ProvisionProviders\SoftwareLicenses\Providers\WHMCS;
 use SimpleXMLElement;
 use Throwable;
 use GuzzleHttp\Client;
-use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SoftwareLicenses\Category;
@@ -24,7 +23,6 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Data\SuspendParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\TerminateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\UnsuspendParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\WHMCS\Data\Configuration;
-use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 
 /**
  * WHMCS provider.
@@ -32,7 +30,7 @@ use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client $client;
+    protected Client|null $client = null;
 
     public function __construct(Configuration $configuration)
     {
@@ -53,10 +51,14 @@ class Provider extends Category implements ProviderInterface
             ->setUsageData($this->getLicense($params->license_key));
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function create(CreateParams $params): CreateResult
     {
         if (!isset($params->package_identifier)) {
-            throw $this->errorResult('Package identifier is required!');
+            $this->errorResult('Package identifier is required!');
         }
 
         try {
@@ -76,6 +78,9 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * Get license data by key.
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     protected function getLicense(string $license_key): ?array
     {
@@ -87,7 +92,7 @@ class Provider extends Category implements ProviderInterface
             $response = $this->makeRequest($request);
 
             if (!$response->licenses) {
-                throw $this->errorResult('License not found');
+                $this->errorResult('License not found');
             }
 
             foreach ($response->licenses as $license) {
@@ -96,16 +101,20 @@ class Provider extends Category implements ProviderInterface
                 }
             }
 
-            throw $this->errorResult('License not found');
+            $this->errorResult('License not found');
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
         if (!isset($params->package_identifier)) {
-            throw $this->errorResult('Package identifier is required!');
+            $this->errorResult('Package identifier is required!');
         }
 
         try {
@@ -126,6 +135,9 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function reissue(ReissueParams $params): ReissueResult
     {
         try {
@@ -144,16 +156,25 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function suspend(SuspendParams $params): EmptyResult
     {
-        throw $this->errorResult('Operation not supported');
+        $this->errorResult('Operation not supported');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
-        throw $this->errorResult('Operation not supported');
+        $this->errorResult('Operation not supported');
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function terminate(TerminateParams $params): EmptyResult
     {
         try {
@@ -180,12 +201,16 @@ class Provider extends Category implements ProviderInterface
             'base_uri' => 'https://licenseapi.whmcs.com',
             'connect_timeout' => 10,
             'timeout' => 60,
-            'handler' => $this->getGuzzleHandlerStack(boolval($this->configuration->debug)),
+            'handler' => $this->getGuzzleHandlerStack(),
         ]);
 
         return $this->client = $client;
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function makeRequest(array $params): SimpleXMLElement
     {
         $params = array_merge([
@@ -199,7 +224,7 @@ class Provider extends Category implements ProviderInterface
         $response->getBody()->close();
 
         if (empty($result)) {
-            throw $this->errorResult('Unexpected Empty Provider API response', [
+            $this->errorResult('Unexpected Empty Provider API response', [
                 'http_code' => $response->getStatusCode(),
             ]);
         }
@@ -207,19 +232,22 @@ class Provider extends Category implements ProviderInterface
         return $this->parseResponseData($result);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     private function parseResponseData(string $result): SimpleXMLElement
     {
         // Try to parse the response
         $xml = simplexml_load_string($result, 'SimpleXMLElement', LIBXML_NOCDATA);
 
         if ($xml === false) {
-            throw $this->errorResult('Unknown Provider API Error', [
+            $this->errorResult('Unknown Provider API Error', [
                 'response_body' => $result,
             ]);
         }
 
         if ($xml->result != 'success') {
-            throw $this->errorResult(sprintf('Provider API Error: %s', $xml->message), [
+            $this->errorResult(sprintf('Provider API Error: %s', $xml->message), [
                 'response_data' => $xml,
             ]);
         }
@@ -229,7 +257,7 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @return no-return
-     * @throws Throwable
+     * @throws \Throwable
      *
      */
     protected function handleException(Throwable $e): void

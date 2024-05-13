@@ -12,7 +12,6 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  *
  * @property-read string $api_url Licensing API URL
  * @property-read string $api_token API auth token
- * @property-read bool|null $debug Whether or not to log api calls
  */
 class Configuration extends DataSet
 {
@@ -21,7 +20,6 @@ class Configuration extends DataSet
         return new Rules([
             'api_url' => ['required', 'url'],
             'api_token' => ['required', 'string'],
-            'debug' => ['nullable', 'boolean']
         ]);
     }
 }

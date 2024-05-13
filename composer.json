@@ -22,9 +22,10 @@
         "upmind/provision-provider-base": "^4.0"
     },
     "require-dev": {
-        "ext-json": "*",
         "phpstan/phpstan": "^1.10",
-        "phpunit/phpunit": "^10 || ^11"
+        "phpunit/phpunit": "^10 || ^11",
+        "ext-json": "*",
+        "ext-simplexml": "*"
     },
     "autoload": {
         "psr-4": {

@@ -13,7 +13,6 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read string $username Username
  * @property-read string $password Password
  * @property-read integer|null $group_id Group ID
- * @property-read bool|null $debug Whether or not to log api calls
  */
 class Configuration extends DataSet
 {
@@ -23,7 +22,6 @@ class Configuration extends DataSet
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
             'group_id' => ['nullable', 'integer'],
-            'debug' => ['nullable', 'boolean']
         ]);
     }
 }

@@ -53,6 +53,9 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionProviders\SoftwareLicenses\Providers\Generic\Exceptions\ResponseMissingLicenseKey
      */
     public function create(CreateParams $params): CreateResult
     {
@@ -72,6 +75,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Upmind\ProvisionProviders\SoftwareLicenses\Providers\Generic\Exceptions\ResponseMissingLicenseKey
      */
     public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
@@ -94,6 +101,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Upmind\ProvisionProviders\SoftwareLicenses\Providers\Generic\Exceptions\ResponseMissingUsageData
      */
     public function getUsageData(GetUsageParams $params): GetUsageResult
     {
@@ -116,6 +127,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Upmind\ProvisionProviders\SoftwareLicenses\Providers\Generic\Exceptions\ResponseMissingLicenseKey
      */
     public function reissue(ReissueParams $params): ReissueResult
     {
@@ -134,6 +149,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Upmind\ProvisionProviders\SoftwareLicenses\Exceptions\OperationFailed
      */
     public function suspend(SuspendParams $params): EmptyResult
     {
@@ -155,6 +174,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Upmind\ProvisionProviders\SoftwareLicenses\Exceptions\OperationFailed
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
@@ -176,6 +199,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Upmind\ProvisionProviders\SoftwareLicenses\Exceptions\OperationFailed
      */
     public function terminate(TerminateParams $params): EmptyResult
     {
@@ -195,6 +222,9 @@ class Provider extends Category implements ProviderInterface
         return EmptyResult::create();
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     protected function request(string $method, string $uri, array $requestParams): ResponseInterface
     {
         return $this->client()->request($method, $uri, $this->getRequestOptions($method, $requestParams));
@@ -225,7 +255,7 @@ class Provider extends Category implements ProviderInterface
     {
         return new Client([
             RequestOptions::HTTP_ERRORS => false,
-            'handler' => $this->getGuzzleHandlerStack((bool) $this->configuration->debug),
+            'handler' => $this->getGuzzleHandlerStack(),
         ]);
     }
 }
