@@ -54,6 +54,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function getUsageData(GetUsageParams $params): GetUsageResult
     {
@@ -64,6 +68,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -97,6 +102,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * Get license data by key.
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -134,6 +140,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -175,6 +182,8 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
     public function suspend(SuspendParams $params): EmptyResult
@@ -190,6 +199,8 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
@@ -213,6 +224,8 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
     public function terminate(TerminateParams $params): EmptyResult
@@ -257,6 +270,7 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function makeRequest(string $command, ?array $params = null, ?string $method = 'GET'): ?array
     {
@@ -325,6 +339,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * Is a license active?
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -336,6 +351,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * Is a license suspended?
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -348,6 +364,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * Is a license expired?
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -359,6 +376,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * Get license status integer; one of self::STATUS_ACTIVE, self::STATUS_SUSPENDED, self::STATUS_EXPIRED.
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -378,6 +396,7 @@ class Provider extends Category implements ProviderInterface
      * Expire a cPanel license.
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
     private function expireLicense(string $licenseKey, string $message = 'License cancelled'): EmptyResult

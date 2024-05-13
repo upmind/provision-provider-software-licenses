@@ -30,7 +30,7 @@ use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client $client;
+    protected Client|null $client = null;
 
     public function __construct(Configuration $configuration)
     {
@@ -45,6 +45,10 @@ class Provider extends Category implements ProviderInterface
             ->setDescription('Resell, provision and manage Blesta licenses');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function getUsageData(GetUsageParams $params): GetUsageResult
     {
         return GetUsageResult::create()
@@ -176,6 +180,8 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
     public function reissue(ReissueParams $params): ReissueResult
@@ -200,6 +206,8 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
     public function suspend(SuspendParams $params): EmptyResult
@@ -225,6 +233,8 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
@@ -250,6 +260,8 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
     public function terminate(TerminateParams $params): EmptyResult
@@ -294,6 +306,7 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function makeRequest(string $command, ?array $params = null, ?array $body = null, ?string $method = 'GET'): ?array
     {
