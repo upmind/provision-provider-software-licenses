@@ -29,7 +29,7 @@ setup-php83: stop-containers --prep-dockerfile-php83 start-containers --remove-p
 shell:
 	docker compose exec -it provision-provider-software-licenses /bin/bash
 
-# Run Static Analysis (PHPStan)
+# Run Unit Tests (PHPUnit)
 test:
 	docker compose exec provision-provider-software-licenses ./vendor/bin/phpunit
 
