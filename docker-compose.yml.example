@@ -1,23 +1,23 @@
 version: '3.3'
 services:
+
   #PHP Service
-  app:
+  provision-provider-software-licenses:
     build:
       context: .
       dockerfile: ./.docker/Dockerfile
-    container_name: app
-    restart: unless-stopped
+    container_name: provision-provider-software-licenses
     tty: true
     environment:
-      SERVICE_NAME: app
+      SERVICE_NAME: provision-provider-software-licenses
       SERVICE_TAGS: dev
     working_dir: /usr/src/lib
     volumes:
       - ./:/usr/src/lib
     networks:
-      - app-network
+      - provision-provider-software-licenses-network
 
 #Docker Networks
 networks:
-  app-network:
+  provision-provider-software-licenses-network:
     driver: bridge

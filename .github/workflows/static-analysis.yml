@@ -1,5 +1,5 @@
 # Workflow name
-name: PHP Unit Tests
+name: Static Analysis
 
 # Triggers
 on:
@@ -12,21 +12,22 @@ on:
 
 # Jobs/Pipelines
 jobs:
-  php-unit:
-    name: 'PHP Unit'
+  phpstan:
+    name: 'PHP Stan'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         php: [ 8.1, 8.2, 8.3 ]
     steps:
-      - name: 'Checkout Code'
+      - name: "Checkout Code"
         uses: actions/checkout@v4
 
       - name: "Setup PHP with tools"
         uses: shivammathur/setup-php@v2
         with:
           php-version: "${{ matrix.php }}"
-          tools: composer, phpunit
+          tools: composer, phpstan
 
       - name: "Get composer cache directory"
         id: composer-cache
@@ -42,5 +43,5 @@ jobs:
       - name: "Install Composer dependencies"
         run: composer install --no-ansi --no-interaction --no-progress --no-scripts --prefer-dist
 
-      - name: 'Run PHPUnit'
-        run: ./vendor/bin/phpunit
+      - name: "Run PHPStan Static Analysis"
+        run: phpstan analyse

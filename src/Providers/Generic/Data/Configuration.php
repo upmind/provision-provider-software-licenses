@@ -28,7 +28,6 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read boolean $has_termination Whether or not this configuration has a terminate endpoint
  * @property-read string|null $terminate_endpoint_url Endpoint which terminates a license key
  * @property-read string|null $terminate_endpoint_http_method HTTP method to use for the terminate endpoint
- * @property-read bool|null $debug Whether or not to log api calls
  */
 class Configuration extends DataSet
 {
@@ -116,10 +115,6 @@ class Configuration extends DataSet
                 'required_if:has_termination,1',
                 'string',
                 'in:post,put,patch,get,delete'
-            ],
-            'debug' => [
-                'nullable',
-                'boolean'
             ],
         ]);
     }

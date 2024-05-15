@@ -12,7 +12,6 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  *
  * @property-read string $email Email
  * @property-read string $api_key API key
- * @property-read bool|null $debug Whether or not to log api calls
  */
 class Configuration extends DataSet
 {
@@ -21,7 +20,6 @@ class Configuration extends DataSet
         return new Rules([
             'email' => ['required', 'string'],
             'api_key' => ['required', 'string'],
-            'debug' => ['nullable', 'boolean']
         ]);
     }
 }

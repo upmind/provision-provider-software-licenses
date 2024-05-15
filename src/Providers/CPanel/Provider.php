@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SoftwareLicenses\Providers\CPanel;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Throwable;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -31,7 +30,7 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Providers\CPanel\Data\Configurati
 class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client $client;
+    protected Client|null $client = null;
 
     public const STATUS_ACTIVE = 1;
     public const STATUS_EXPIRED = 2;
@@ -55,6 +54,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function getUsageData(GetUsageParams $params): GetUsageResult
     {
@@ -64,6 +67,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function create(CreateParams $params): CreateResult
     {
@@ -95,7 +102,9 @@ class Provider extends Category implements ProviderInterface
     /**
      * Get license data by key.
      *
-     * @throws Throwable
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     protected function getLicense(string $license_key, bool $getExpired = false, bool $orFail = true): ?array
     {
@@ -130,6 +139,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
@@ -158,6 +171,8 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function reissue(ReissueParams $params): ReissueResult
     {
@@ -167,7 +182,9 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
-     * @throws Throwable
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function suspend(SuspendParams $params): EmptyResult
     {
@@ -182,7 +199,9 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
-     * @throws Throwable
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
@@ -205,7 +224,9 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
-     * @throws Throwable
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function terminate(TerminateParams $params): EmptyResult
     {
@@ -231,7 +252,7 @@ class Provider extends Category implements ProviderInterface
             ],
             'connect_timeout' => 10,
             'timeout' => 60,
-            'handler' => $this->getGuzzleHandlerStack((bool) $this->configuration->debug),
+            'handler' => $this->getGuzzleHandlerStack(),
         ]);
 
         return $this->client = $client;
@@ -239,7 +260,7 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @return no-return
-     * @throws Throwable
+     * @throws \Throwable
      *
      */
     protected function handleException(Throwable $e): void
@@ -248,7 +269,8 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @throws GuzzleException
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function makeRequest(string $command, ?array $params = null, ?string $method = 'GET'): ?array
     {
@@ -275,6 +297,9 @@ class Provider extends Category implements ProviderInterface
         return $this->parseResponseData($result);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     private function parseResponseData(string $result): ?array
     {
         $parsedResult = json_decode($result, true);
@@ -301,7 +326,7 @@ class Provider extends Category implements ProviderInterface
         $status = $responseData['status'] ?? null;
 
         if ($status == 0) {
-            if (isset($responseData['reason']) && $responseData['reason'] == 'Empty license.') {
+            if (isset($responseData['reason']) && $responseData['reason'] === 'Empty license.') {
                 $errorMessage = 'License does not exist';
             } else {
                 $errorMessage = $responseData['reason'] ?? null;
@@ -313,6 +338,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * Is a license active?
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     private function isLicenseActive(string $licenseKey): bool
     {
@@ -321,6 +350,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * Is a license suspended?
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     private function isLicenseSuspended(string $licenseKey): bool
     {
@@ -330,6 +363,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * Is a license expired?
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     private function isLicenseExpired(string $licenseKey): bool
     {
@@ -338,6 +375,10 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * Get license status integer; one of self::STATUS_ACTIVE, self::STATUS_SUSPENDED, self::STATUS_EXPIRED.
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     private function getLicenseStatus(string $licenseKey): int
     {
@@ -345,7 +386,7 @@ class Provider extends Category implements ProviderInterface
         $status = $licenseData['licenses']['L' . $licenseKey]['status'] ?? null;
 
         if ($status === null) {
-            throw $this->errorResult('Unable to determine license status');
+            $this->errorResult('Unable to determine license status');
         }
 
         return (int)$status;
@@ -354,7 +395,9 @@ class Provider extends Category implements ProviderInterface
     /**
      * Expire a cPanel license.
      *
-     * @throws Throwable
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     private function expireLicense(string $licenseKey, string $message = 'License cancelled'): EmptyResult
     {
