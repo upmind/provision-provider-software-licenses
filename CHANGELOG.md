@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v3.4](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.4) - 2024-05-15
+
+- Update for PHP 8.1+ and base library v4
+- Add static analyser and docker environment
+
 ## [v3.3](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.3) - 2024-02-19
 
 - Implement cPanel (manage2) provider
