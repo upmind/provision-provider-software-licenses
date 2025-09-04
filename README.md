@@ -40,6 +40,7 @@ The following providers are currently implemented:
   - [Enhance](https://enhance.com/)
   - [Blesta](https://docs.blesta.com/display/dev/Reseller+API)
   - [WHMCS](https://assets.whmcs.com/reseller/api/whmcs-reseller-api-docs-v3.2.pdf)
+  - [cPanel](https://docs.cpanel.net/manage2/api/)
 
 ## Functions
 
