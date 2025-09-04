@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v3.5](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.5) - 2025-09-04
+
+- Add renew() function
+- Add billing_cycle_months parameter to CreateParams, RenewParams and ChangePackageParams
+
 ## [v3.4](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.4) - 2024-05-15
 
 - Update for PHP 8.1+ and base library v4
