@@ -19,6 +19,8 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Data\GetUsageParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\GetUsageResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ReissueParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ReissueResult;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\RenewParams;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\RenewResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\SuspendParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\TerminateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\UnsuspendParams;
@@ -105,6 +107,14 @@ class Provider extends Category implements ProviderInterface
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
+    }
+
+    public function renew(RenewParams $params): RenewResult
+    {
+        return RenewResult::create()
+            ->setLicenseKey($params->license_key)
+            ->setPackageIdentifier($params->package_identifier)
+            ->setMessage('Renewal not required for WHMCS licenses');
     }
 
     /**

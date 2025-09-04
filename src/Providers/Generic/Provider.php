@@ -20,6 +20,8 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Data\GetUsageParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\GetUsageResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ReissueParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ReissueResult;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\RenewParams;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\RenewResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\SuspendParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\TerminateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\UnsuspendParams;
@@ -70,6 +72,32 @@ class Provider extends Category implements ProviderInterface
         return CreateResult::create()
             ->setLicenseKey($handler->getLicenseKey())
             ->setServiceIdentifier($handler->getServiceIdentifier() ?? $params->service_identifier)
+            ->setPackageIdentifier($handler->getPackageIdentifier() ?? $params->package_identifier);
+    }
+
+    /**
+     * @inheritDoc
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Upmind\ProvisionProviders\SoftwareLicenses\Providers\Generic\Exceptions\ResponseMissingLicenseKey
+     */
+    public function renew(RenewParams $params): RenewResult
+    {
+        if (!$this->configuration->has_renew) {
+            $this->errorResult('No renew endpoint set in this configuration');
+        }
+
+        $method = strtoupper($this->configuration->renew_endpoint_http_method);
+        $endpointUrl = $this->configuration->renew_endpoint_url;
+
+        $requestParams = $params->toArray();
+        $requestParams = array_merge($requestParams, Arr::pull($requestParams, 'extra', [])); // merge extra params
+
+        $handler = new LicenseKeyResponseHandler($this->request($method, $endpointUrl, $requestParams));
+
+        return RenewResult::create()
+            ->setLicenseKey($handler->getLicenseKey())
             ->setPackageIdentifier($handler->getPackageIdentifier() ?? $params->package_identifier);
     }
 

@@ -23,6 +23,8 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Data\TerminateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\UnsuspendParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Blesta\Data\Configuration;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\RenewParams;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\RenewResult;
 
 /**
  * Blesta provider.
@@ -78,6 +80,14 @@ class Provider extends Category implements ProviderInterface
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
+    }
+
+    public function renew(RenewParams $params): RenewResult
+    {
+        return RenewResult::create()
+            ->setLicenseKey($params->license_key)
+            ->setPackageIdentifier($params->package_identifier)
+            ->setMessage('Renewal not required for Blesta licenses');
     }
 
     /**
