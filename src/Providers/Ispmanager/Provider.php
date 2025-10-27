@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SoftwareLicenses\Providers\Ispmanager;
 
 use GuzzleHttp\Client;
+use Illuminate\Support\Str;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SoftwareLicenses\Category;
@@ -30,7 +31,23 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Ispmanager\Data\Configu
 class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client|null $client = null;
+    protected ?Client $client = null;
+
+    protected const PACKAGE_TRIAL = 55239;
+    protected const PACKAGE_BUSINESS_TRIAL = 55240;
+    protected const PACKAGE_LITE = 55227;
+    protected const PACKAGE_PRO = 55228;
+    protected const PACKAGE_HOST = 55229;
+    protected const PACKAGE_BUSINESS = 55230;
+
+    protected const PACKAGE_ID_MAP = [
+        'ispmanager 6 trial' => self::PACKAGE_TRIAL,
+        'ispmanager 6 business trial' => self::PACKAGE_BUSINESS_TRIAL,
+        'ispmanager 6 lite' => self::PACKAGE_LITE,
+        'ispmanager 6 pro' => self::PACKAGE_PRO,
+        'ispmanager 6 host' => self::PACKAGE_HOST,
+        'ispmanager 6 business' => self::PACKAGE_BUSINESS,
+    ];
 
     public function __construct(Configuration $configuration)
     {
@@ -55,21 +72,24 @@ class Provider extends Category implements ProviderInterface
     {
         $data = $this->makeRequest([
             'func' => 'soft.edit',
-            'elid' => $params->license_key,
+            'elid' => $this->getLicenseId($params->license_key),
         ]);
         $data = $data['model'];
         $statuses = ['Unknown', 'Ordered', 'Active', 'Suspended', 'Deleted', 'Processing'];
 
-        return GetUsageResult::create()->setUsageData([
-            'id' => $data['id'],
-            'name' => $data['name'],
-            'licname' => $data['licname'],
-            'ip' => $data['ip'],
-            'lickey' => $data['lickey'] ?? '',
-            'status' => $statuses[$data['status']] ?? $data['status'],
-            'createdate' => $data['createdate'],
-            'expiredate' => $data['expiredate'],
-        ]);
+        return GetUsageResult::create()
+            ->setUnitsConsumed($data['webdomains'] ?: 0)
+            ->setUsageData([
+                'id' => $data['id'],
+                'name' => $data['name'],
+                'licname' => $data['licname'],
+                'ip' => $data['ip'],
+                'lickey' => $data['lickey'] ?? '',
+                'status' => $statuses[$data['status']] ?? $data['status'],
+                'webdomains' => $data['webdomains'] ?? 0,
+                'createdate' => $data['createdate'],
+                'expiredate' => $data['expiredate'],
+            ]);
     }
 
     /**
@@ -79,11 +99,15 @@ class Provider extends Category implements ProviderInterface
      */
     public function create(CreateParams $params): CreateResult
     {
+        $packageId = $this->getPackageId($params->package_identifier);
         $period = $params->billing_cycle_months;
-        if (in_array($params->package_identifier, [55239, 55240])) $period = -100;
+        if (in_array($packageId, [self::PACKAGE_TRIAL, self::PACKAGE_BUSINESS_TRIAL])) {
+            $period = -100;
+        }
+
         $result = $this->makeRequest([
             'func' => 'soft.order.param',
-            'pricelist' => $params->package_identifier,
+            'pricelist' => $packageId,
             'period' => $period,
             'ip' => $params->ip,
             'licname' => $params->service_identifier,
@@ -94,8 +118,16 @@ class Provider extends Category implements ProviderInterface
             'autoprolong' => 'null',
         ]);
 
+        $data = $this->makeRequest([
+            'func' => 'soft.edit',
+            'elid' => $result['id']['v'],
+        ]);
+        $data = $data['model'];
+
         return CreateResult::create()
-            ->setLicenseKey($result['id']['v'])
+            ->setLicenseKey($data['lickey'])
+            ->setServiceIdentifier($data['licname'] ?: null)
+            ->setPackageIdentifier($data['pricelist_name'])
             ->setMessage('License created');
     }
 
@@ -108,7 +140,7 @@ class Provider extends Category implements ProviderInterface
     {
         $this->makeRequest([
             'func' => 'service.prolong',
-            'elid' => $params->license_key,
+            'elid' => $this->getLicenseId($params->license_key),
             'period' => $params->billing_cycle_months,
             'sok' => 'ok',
         ]);
@@ -127,7 +159,7 @@ class Provider extends Category implements ProviderInterface
     {
         $this->makeRequest([
             'func' => 'service.changepricelist',
-            'elid' => $params->license_key,
+            'elid' => $this->getLicenseId($params->license_key),
             'pricelist' => $params->package_identifier,
             'period' => $params->billing_cycle_months,
             'sok' => 'ok',
@@ -148,7 +180,7 @@ class Provider extends Category implements ProviderInterface
     {
         $this->makeRequest([
             'func' => 'soft.edit',
-            'elid' => $params->license_key,
+            'elid' => $this->getLicenseId($params->license_key),
             'clicked_button' => 'newkey',
             'sok' => 'ok',
         ]);
@@ -187,11 +219,34 @@ class Provider extends Category implements ProviderInterface
     {
         $this->makeRequest([
             'func' => 'soft.delete',
-            'elid' => $params->license_key,
+            'elid' => $this->getLicenseId($params->license_key),
             'sok' => 'ok',
         ]);
 
         return EmptyResult::create()->setMessage('License cancelled');
+    }
+
+    protected function getLicenseId($licenseKey): int
+    {
+        if (is_numeric($licenseKey)) {
+            return (int)$licenseKey;
+        }
+
+        return (int)Str::before($licenseKey, '-');
+    }
+
+    protected function getPackageId($packageIdentifier): int
+    {
+        if (is_numeric($packageIdentifier)) {
+            return (int)$packageIdentifier;
+        }
+
+        $packageIdentifier = strtolower((string)$packageIdentifier);
+        if (!array_key_exists($packageIdentifier, self::PACKAGE_ID_MAP)) {
+            $this->errorResult('Invalid package identifier: ' . $packageIdentifier);
+        }
+
+        return self::PACKAGE_ID_MAP[$packageIdentifier];
     }
 
     /**
