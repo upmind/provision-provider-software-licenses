@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v3.6](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.6) - 2025-10-27
+
+- Implement ISPManager
+
 ## [v3.5](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.5) - 2025-09-04
 
 - Add renew() function
