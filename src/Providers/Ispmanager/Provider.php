@@ -101,7 +101,7 @@ class Provider extends Category implements ProviderInterface
     {
         $packageId = $this->getPackageId($params->package_identifier);
         $period = $params->billing_cycle_months;
-        if (in_array($packageId, [self::PACKAGE_TRIAL, self::PACKAGE_BUSINESS_TRIAL])) {
+        if ($this->packageIsTrial($packageId)) {
             $period = -100;
         }
 
@@ -118,16 +118,12 @@ class Provider extends Category implements ProviderInterface
             'autoprolong' => 'null',
         ]);
 
-        $data = $this->makeRequest([
-            'func' => 'soft.edit',
-            'elid' => $result['id']['v'],
-        ]);
-        $data = $data['model'];
+        $model = $this->getLicenseModel($result['id']['v']);
 
         return CreateResult::create()
-            ->setLicenseKey($data['lickey'])
-            ->setServiceIdentifier($data['licname'] ?: null)
-            ->setPackageIdentifier($data['pricelist_name'])
+            ->setLicenseKey($model['lickey'])
+            ->setServiceIdentifier($model['licname'] ?: null)
+            ->setPackageIdentifier($model['pricelist_name'])
             ->setMessage('License created');
     }
 
@@ -138,6 +134,11 @@ class Provider extends Category implements ProviderInterface
      */
     public function renew(RenewParams $params): RenewResult
     {
+        $model = $this->getLicenseModel($params->license_key);
+        if ($this->packageIsTrial($model['pricelist'])) {
+            $this->errorResult('Trial licenses cannot be renewed');
+        }
+
         $this->makeRequest([
             'func' => 'service.prolong',
             'elid' => $this->getLicenseId($params->license_key),
@@ -160,7 +161,7 @@ class Provider extends Category implements ProviderInterface
         $this->makeRequest([
             'func' => 'service.changepricelist',
             'elid' => $this->getLicenseId($params->license_key),
-            'pricelist' => $params->package_identifier,
+            'pricelist' => $this->getPackageId($params->package_identifier),
             'period' => $params->billing_cycle_months,
             'sok' => 'ok',
         ]);
@@ -226,6 +227,14 @@ class Provider extends Category implements ProviderInterface
         return EmptyResult::create()->setMessage('License cancelled');
     }
 
+    protected function getLicenseModel($licenseKey): array
+    {
+        return $this->makeRequest([
+            'func' => 'soft.edit',
+            'elid' => $this->getLicenseId($licenseKey),
+        ])['model'];
+    }
+
     protected function getLicenseId($licenseKey): int
     {
         if (is_numeric($licenseKey)) {
@@ -233,6 +242,12 @@ class Provider extends Category implements ProviderInterface
         }
 
         return (int)Str::before($licenseKey, '-');
+    }
+
+    protected function packageIsTrial($packageIdentifier): bool
+    {
+        $packageId = $this->getPackageId($packageIdentifier);
+        return in_array($packageId, [self::PACKAGE_TRIAL, self::PACKAGE_BUSINESS_TRIAL]);
     }
 
     protected function getPackageId($packageIdentifier): int
