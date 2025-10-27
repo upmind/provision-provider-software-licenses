@@ -278,19 +278,29 @@ class Provider extends Category implements ProviderInterface
 
     public function makeRequest(array $params)
     {
-        if (!isset($params['out'])) $params['out'] = 'bjson';
-        if (!isset($params['lang'])) $params['lang'] = 'en';
+        if (!isset($params['out'])) {
+            $params['out'] = 'bjson';
+        }
+        if (!isset($params['lang'])) {
+            $params['lang'] = 'en';
+        }
         $params['authinfo'] = $this->configuration->username . ':' . $this->configuration->password;
 
         $response = $this->client()->post('/billmgr', ['body' => http_build_query($params)]);
         $result = $response->getBody()->getContents();
         $response->getBody()->close();
 
-        if (empty($result)) $this->errorResult('Unexpected Empty Provider API response', ['http_code' => $response->getStatusCode()]);
+        if (empty($result)) {
+            $this->errorResult('Unexpected Empty Provider API response', ['http_code' => $response->getStatusCode()]);
+        }
 
         $result = json_decode($result, true);
-        if (isset($result['doc'])) $result = $result['doc'];
-        if (!empty($result['error']['msg'])) $this->errorResult($result['error']['msg']['$'] ?? $result['error']['msg']);
+        if (isset($result['doc'])) {
+            $result = $result['doc'];
+        }
+        if (!empty($result['error']['msg'])) {
+            $this->errorResult($result['error']['msg']['$'] ?? $result['error']['msg']);
+        }
 
         return $result;
     }
