@@ -198,7 +198,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function suspend(SuspendParams $params): EmptyResult
     {
-        $this->errorResult('Operation not supported');
+        return EmptyResult::create()->setMessage('Suspend operation not supported by this provider');
     }
 
     /**
@@ -208,7 +208,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
-        $this->errorResult('Operation not supported');
+        return EmptyResult::create()->setMessage('Unsuspend operation not supported by this provider');
     }
 
     /**
