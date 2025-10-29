@@ -105,7 +105,6 @@ abstract class AbstractHandler
      */
     protected function parseJson(): void
     {
-        // HTTP 204 No Content responses are expected to have an empty body
         if ($this->isHttpSuccessNoContent()) {
             $this->data = null;
 
@@ -128,7 +127,6 @@ abstract class AbstractHandler
      */
     protected function parseText(): void
     {
-        // HTTP 204 No Content responses are expected to have an empty body
         if ($this->isHttpSuccessNoContent()) {
             $this->data = null;
 
@@ -181,6 +179,7 @@ abstract class AbstractHandler
 
     /**
      * Determine if the http response code is 204 No Content.
+     * HTTP 204 No Content responses are expected to have an empty body
      */
     public function isHttpSuccessNoContent(): bool
     {
