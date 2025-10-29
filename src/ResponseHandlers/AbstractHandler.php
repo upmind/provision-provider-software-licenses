@@ -83,7 +83,7 @@ abstract class AbstractHandler
 
         // HTTP 204 No Content responses are expected to have an empty body
         if ($this->response->getStatusCode() === 204) {
-            $this->data = null;
+            $this->data = [];
             $this->assertResponseSuccess();
             return;
         }
