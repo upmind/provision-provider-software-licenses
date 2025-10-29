@@ -18,8 +18,8 @@ class DefaultResponseHandlerTest extends TestCase
         // Should not throw an exception
         $handler->assertResponseSuccess();
 
-        // getData should return null for 204 responses
-        $this->assertNull($handler->getData());
+        // getData should return empty array for 204 responses
+        $this->assertEquals([], $handler->getData());
     }
 
     public function testHandles204ResponseWithNoContentHeader(): void
@@ -30,8 +30,8 @@ class DefaultResponseHandlerTest extends TestCase
         // Should not throw an exception
         $handler->assertResponseSuccess();
 
-        // getData should return null for 204 responses
-        $this->assertNull($handler->getData());
+        // getData should return empty array for 204 responses
+        $this->assertEquals([], $handler->getData());
     }
 
     public function testHandles200ResponseWithSuccessBody(): void
