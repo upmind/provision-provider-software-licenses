@@ -19,7 +19,7 @@ class DefaultResponseHandlerTest extends TestCase
         $handler->assertResponseSuccess();
 
         // getData should return empty array for 204 responses
-        $this->assertEquals([], $handler->getData());
+        $this->assertNull($handler->getData());
     }
 
     public function testHandles204ResponseWithNoContentHeader(): void
@@ -31,7 +31,7 @@ class DefaultResponseHandlerTest extends TestCase
         $handler->assertResponseSuccess();
 
         // getData should return empty array for 204 responses
-        $this->assertEquals([], $handler->getData());
+        $this->assertNull($handler->getData());
     }
 
     public function testHandles200ResponseWithSuccessBody(): void
