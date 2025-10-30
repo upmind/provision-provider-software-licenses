@@ -89,6 +89,10 @@ abstract class AbstractHandler
             throw new CannotParseResponse('Unable to parse response of this content type');
         }
 
+        if ($this->isHttpSuccessNoContent()) {
+            return;
+        }
+
         $this->assertResponseSuccess();
     }
 
@@ -101,6 +105,12 @@ abstract class AbstractHandler
      */
     protected function parseJson(): void
     {
+        if ($this->isHttpSuccessNoContent()) {
+            $this->data = null;
+
+            return;
+        }
+
         if (!$data = json_decode($this->getBody(), true)) {
             throw new CannotParseResponse('Invalid JSON response');
         }
@@ -117,6 +127,12 @@ abstract class AbstractHandler
      */
     protected function parseText(): void
     {
+        if ($this->isHttpSuccessNoContent()) {
+            $this->data = null;
+
+            return;
+        }
+
         if (!$body = $this->getBody()) {
             throw new CannotParseResponse('Empty text response');
         }
@@ -159,6 +175,15 @@ abstract class AbstractHandler
         $httpCode = $this->response->getStatusCode();
 
         return $httpCode >= 200 && $httpCode < 300;
+    }
+
+    /**
+     * Determine if the http response code is 204 No Content.
+     * HTTP 204 No Content responses are expected to have an empty body
+     */
+    public function isHttpSuccessNoContent(): bool
+    {
+        return $this->response->getStatusCode() === 204;
     }
 
     /**
