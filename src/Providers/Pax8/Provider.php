@@ -628,6 +628,8 @@ class Provider extends Category implements ProviderInterface
                 }
             }
         }
+
+        return null;
     }
 
     /**
@@ -713,6 +715,7 @@ class Provider extends Category implements ProviderInterface
     private function createContacts(string $customer_name, string $customer_email, string $companyId, string $phone): void
     {
         @[$firstName, $lastName] = explode(' ', $customer_name, 2);
+
 
         $contactBody = [
             'firstName' => $firstName,
