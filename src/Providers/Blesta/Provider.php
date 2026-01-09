@@ -32,7 +32,7 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Data\RenewResult;
 class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client|null $client = null;
+    protected ?Client $client = null;
 
     public function __construct(Configuration $configuration)
     {

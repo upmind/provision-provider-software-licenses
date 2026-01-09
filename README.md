@@ -41,6 +41,7 @@ The following providers are currently implemented:
   - [Blesta](https://docs.blesta.com/display/dev/Reseller+API)
   - [WHMCS](https://assets.whmcs.com/reseller/api/whmcs-reseller-api-docs-v3.2.pdf)
   - [cPanel](https://docs.cpanel.net/manage2/api/)
+  - [IspManager](https://www.ispmanager.com/docs/for-partners/reselling-of-ispmanager-licenses-via-api)
 
 ## Functions
 

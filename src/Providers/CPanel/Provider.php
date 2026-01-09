@@ -32,7 +32,7 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Providers\CPanel\Data\Configurati
 class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client|null $client = null;
+    protected ?Client $client = null;
 
     public const STATUS_ACTIVE = 1;
     public const STATUS_EXPIRED = 2;

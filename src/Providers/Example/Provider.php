@@ -30,7 +30,7 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Example\Data\Configurat
 class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client|null $client = null;
+    protected ?Client $client = null;
 
     public function __construct(Configuration $configuration)
     {
