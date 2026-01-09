@@ -7,6 +7,7 @@ namespace Upmind\ProvisionProviders\SoftwareLicenses\Providers\Pax8;
 use DateTime;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\ServerException;
 use RuntimeException;
 use Throwable;
@@ -36,10 +37,10 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Pax8\Data\Configuration
 class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client|null $client = null;
+    protected ?Client $client = null;
 
 
-    protected string|null $token = null;
+    protected ?string $token = null;
 
     public function __construct(Configuration $configuration)
     {
@@ -127,12 +128,20 @@ class Provider extends Category implements ProviderInterface
             ];
 
             if (isset($params->billing_cycle_months) && $params->billing_cycle_months > 1) {
-                $lineItem['billingTerm'] = match ($params->billing_cycle_months) {
-                    12 => 'Annual',
-                    24 => '2-Year',
-                    36 => '3-Year',
-                    default => 'Monthly',
-                };
+                switch ($params->billing_cycle_months) {
+                    case 12:
+                        $lineItem['billingTerm'] = 'Annual';
+                        break;
+                    case 24:
+                        $lineItem['billingTerm'] = '2-Year';
+                        break;
+                    case 36:
+                        $lineItem['billingTerm'] = '3-Year';
+                        break;
+                    default:
+                        $lineItem['billingTerm'] = 'Monthly';
+                        break;
+                }
             }
 
             $dependency = $this->getProductDependencies($productId, $lineItem['billingTerm']);
@@ -597,6 +606,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * @param string $customer
      * @return string|null
+     * @throws GuzzleException
      */
     private function getCompanyByName(string $customer): ?string
     {
@@ -618,13 +628,12 @@ class Provider extends Category implements ProviderInterface
                 }
             }
         }
-
-        return null;
     }
 
     /**
      * @param string $companyId
      * @return array
+     * @throws GuzzleException
      */
     private function getCompanyById(string $companyId): array
     {
@@ -635,6 +644,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * @param string $value
      * @return string|null
+     * @throws GuzzleException
      */
     private function getProductId(string $value): ?string
     {
@@ -656,6 +666,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * @param string $package_identifier
      * @return string|null
+     * @throws GuzzleException
      */
     private function getProductById(string $package_identifier): ?string
     {
@@ -668,7 +679,8 @@ class Provider extends Category implements ProviderInterface
      * @param array $address
      * @param string $website
      * @param string $phone
-     * @return mixed
+     * @return string
+     * @throws GuzzleException
      */
     private function createCompany(string $customer_name, string $customer_email, array $address, string $website, string $phone): string
     {
@@ -693,18 +705,18 @@ class Provider extends Category implements ProviderInterface
     /**
      * @param string $customer_name
      * @param string $customer_email
-     * @param mixed $companyId
+     * @param string $companyId
      * @param string $phone
      * @return void
+     * @throws GuzzleException
      */
     private function createContacts(string $customer_name, string $customer_email, string $companyId, string $phone): void
     {
         @[$firstName, $lastName] = explode(' ', $customer_name, 2);
 
-
         $contactBody = [
             'firstName' => $firstName,
-            'lastName' => $lastName ?? $firstName,
+            'lastName' => $lastName != "" ? $lastName : $firstName,
             'email' => $customer_email,
             'phone' => $phone,
             'types' => [
@@ -730,6 +742,7 @@ class Provider extends Category implements ProviderInterface
      * @param string $productId
      * @param string $billingTerm
      * @return array|null
+     * @throws GuzzleException
      */
     private function getProductDependencies(string $productId, string $billingTerm): ?array
     {
