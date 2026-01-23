@@ -39,7 +39,6 @@ class Provider extends Category implements ProviderInterface
     protected Configuration $configuration;
     protected ?Client $client = null;
 
-
     protected ?string $token = null;
 
     public function __construct(Configuration $configuration)
@@ -150,7 +149,7 @@ class Provider extends Category implements ProviderInterface
                 $lineItem['billingTerm'] = $dependency['term'];
             }
 
-            if ($lineItem['billingTerm'] == '1-Year') {
+            if ($lineItem['billingTerm'] === '1-Year') {
                 $lineItem['billingTerm'] = 'Annual';
             }
 
@@ -180,102 +179,6 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
-
-    /**
-     * @param CreateParams $params
-     * @return array
-     */
-    function buildProvisioningDetails(CreateParams $params): array
-    {
-        $sharedDetails = $this->getSharedMicrosoftDetails();
-
-        if (isset($params->customer_identifier)) {
-            $details = $this->getExistingCustomerDetails($params->customer_identifier);
-        } else {
-            @[$firstName, $lastName] = explode(' ', $params->customer_name, 2);
-            $details = $this->getNewCustomerDetails($firstName, $lastName, $params->customer_email ?? '');
-        }
-
-        $details = array_merge($details, $sharedDetails);
-
-        return $this->formatProvisioningDetails($details);
-    }
-
-    /**
-     * @param string $firstName
-     * @param string $lastName
-     * @param string $email
-     * @return string[]
-     */
-    function getNewCustomerDetails(
-        string $firstName,
-        string $lastName,
-        string $email
-    ): array
-    {
-        return [
-            'msCustExists' => 'No, the customer does not have a Microsoft account',
-
-            'mca2020FirstName' => $firstName,
-            'mca2020LastName' => $lastName,
-            'mca2020Email' => $email,
-
-            'msftContactFirstName' => $firstName,
-            'msftContactLastName' => $lastName,
-            'msftContactEmail' => $email,
-        ];
-    }
-
-    /**
-     * @param string $tenantId
-     * @return string[]
-     */
-    function getExistingCustomerDetails(string $tenantId): array
-    {
-        return [
-            'msCustExists' => 'Yes, the customer has and can log into their Microsoft account',
-            'msTenantId' => $tenantId,
-
-            'mca2020FirstName' => '',
-            'mca2020LastName' => '',
-            'mca2020Email' => '',
-
-            'msftContactFirstName' => '',
-            'msftContactLastName' => '',
-            'msftContactEmail' => '',
-        ];
-    }
-
-    /**
-     * @return string[]
-     */
-    function getSharedMicrosoftDetails(): array
-    {
-        return [
-            'microsoftCancelPolicyAcknowledgement' =>
-                'I understand, and acknowledge that I will have a 7 calendar day window to cancel my subscription, or make quantity decrements before I am no longer able to make these changes. Once a subscription is locked, I will be required fulfill my elected commitment term of my subscription.',
-            'microsoftTrialConversion' =>
-                'I understand and acknowledge that at the conclusion of my Microsoft trial license period (30 days), my 25 trial subscriptions will automatically convert to 25 paid subscriptions.'
-        ];
-    }
-
-
-    /**
-     * @param array $details
-     * @return array
-     */
-    function formatProvisioningDetails(array $details): array
-    {
-        return array_map(
-            fn($key, $value) => [
-                'key' => $key,
-                'values' => $value !== '' ? [$value] : [],
-            ],
-            array_keys($details),
-            $details
-        );
-    }
-
     /**
      * @param RenewParams $params
      * @return RenewResult
@@ -289,24 +192,6 @@ class Provider extends Category implements ProviderInterface
             ->setLicenseKey($params->license_key)
             ->setPackageIdentifier($params->package_identifier)
             ->setMessage('Renewal not required for Pax8 licenses');
-    }
-
-    /**
-     * Get license data by key.
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws ProvisionFunctionError
-     * @throws \Throwable
-     */
-    protected function getSubscription(string $license_key): ?array
-    {
-        try {
-            $response = $this->makeRequest("subscriptions/{$license_key}", null, null, 'GET');
-            return (array)$response;
-
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
     }
 
     /**
@@ -392,71 +277,6 @@ class Provider extends Category implements ProviderInterface
         return $this->cancelSubscription($params->license_key);
     }
 
-    protected function client(): Client
-    {
-        if (isset($this->client)) {
-            return $this->client;
-        }
-
-        $client = new Client([
-            'base_uri' => 'https://api.pax8.com',
-            'connect_timeout' => 10,
-            'headers' => [
-                'accept' => 'application/json',
-                'content-type' => 'application/json',
-            ],
-            'timeout' => 60,
-            'handler' => $this->getGuzzleHandlerStack(),
-        ]);
-
-        return $this->client = $client;
-    }
-
-    /**
-     * @throws ProvisionFunctionError
-     * @throws RuntimeException
-     */
-    private function getAuthToken(): string
-    {
-        $body = [
-            'client_id' => $this->configuration->clientId,
-            'client_secret' => $this->configuration->clientSecret,
-            'audience' => 'https://api.pax8.com',
-            'grant_type' => 'client_credentials',
-        ];
-
-        $response = $this->makeRequest('token', null, $body);
-
-        return $response['access_token'];
-    }
-
-    /**
-     * @return no-return
-     * @throws \Throwable
-     *
-     */
-    protected function handleException(Throwable $e): void
-    {
-        if (($e instanceof ClientException || $e instanceof ServerException) && $e->hasResponse()) {
-            /** @var \Psr\Http\Message\ResponseInterface $response */
-            $response = $e->getResponse();
-
-            $responseBody = $response->getBody()->__toString();
-            $responseData = json_decode($responseBody, true);
-
-            $errorMessage = $responseData['message'] ?? null;
-
-            $this->errorResult(
-                sprintf('Provider API Error: %s', $errorMessage),
-                ['response_data' => $responseData],
-                [],
-                $e
-            );
-        }
-
-        throw $e;
-    }
-
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws ProvisionFunctionError
@@ -493,6 +313,180 @@ class Provider extends Category implements ProviderInterface
         }
 
         return $this->parseResponseData($result);
+    }
+
+    /**
+     * @return no-return
+     * @throws \Throwable
+     *
+     */
+    protected function handleException(Throwable $e): void
+    {
+        if (($e instanceof ClientException || $e instanceof ServerException) && $e->hasResponse()) {
+            /** @var \Psr\Http\Message\ResponseInterface $response */
+            $response = $e->getResponse();
+
+            $responseBody = $response->getBody()->__toString();
+            $responseData = json_decode($responseBody, true);
+
+            $errorMessage = $responseData['message'] ?? null;
+
+            $this->errorResult(
+                sprintf('Provider API Error: %s', $errorMessage),
+                ['response_data' => $responseData],
+                [],
+                $e
+            );
+        }
+
+        throw $e;
+    }
+
+    protected function client(): Client
+    {
+        if (isset($this->client)) {
+            return $this->client;
+        }
+
+        $client = new Client([
+            'base_uri' => 'https://api.pax8.com',
+            'connect_timeout' => 10,
+            'headers' => [
+                'accept' => 'application/json',
+                'content-type' => 'application/json',
+            ],
+            'timeout' => 60,
+            'handler' => $this->getGuzzleHandlerStack(),
+        ]);
+
+        return $this->client = $client;
+    }
+
+    /**
+     * Get license data by key.
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws ProvisionFunctionError
+     * @throws \Throwable
+     */
+    protected function getSubscription(string $license_key): ?array
+    {
+        try {
+            $response = $this->makeRequest("subscriptions/{$license_key}", null, null, 'GET');
+            return (array)$response;
+
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
+    }
+
+    /**
+     * @throws ProvisionFunctionError
+     * @throws RuntimeException
+     */
+    private function getAuthToken(): string
+    {
+        $body = [
+            'client_id' => $this->configuration->client_id,
+            'client_secret' => $this->configuration->client_secret,
+            'audience' => 'https://api.pax8.com',
+            'grant_type' => 'client_credentials',
+        ];
+
+        $response = $this->makeRequest('token', null, $body);
+
+        return $response['access_token'];
+    }
+
+    /**
+     * @param CreateParams $params
+     * @return array
+     */
+    private function buildProvisioningDetails(CreateParams $params): array
+    {
+        $sharedDetails = $this->getSharedMicrosoftDetails();
+
+        if (isset($params->customer_identifier)) {
+            $details = $this->getExistingCustomerDetails($params->customer_identifier);
+        } else {
+            @[$firstName, $lastName] = explode(' ', $params->customer_name, 2);
+            $details = $this->getNewCustomerDetails($firstName, $lastName, $params->customer_email ?? '');
+        }
+
+        $details = array_merge($details, $sharedDetails);
+
+        return $this->formatProvisioningDetails($details);
+    }
+
+    /**
+     * @param string $firstName
+     * @param string $lastName
+     * @param string $email
+     * @return string[]
+     */
+    private function getNewCustomerDetails(string $firstName, string $lastName, string $email): array
+    {
+        return [
+            'msCustExists' => 'No, the customer does not have a Microsoft account',
+
+            'mca2020FirstName' => $firstName,
+            'mca2020LastName' => $lastName,
+            'mca2020Email' => $email,
+
+            'msftContactFirstName' => $firstName,
+            'msftContactLastName' => $lastName,
+            'msftContactEmail' => $email,
+        ];
+    }
+
+    /**
+     * @param string $tenantId
+     * @return string[]
+     */
+    private function getExistingCustomerDetails(string $tenantId): array
+    {
+        return [
+            'msCustExists' => 'Yes, the customer has and can log into their Microsoft account',
+            'msTenantId' => $tenantId,
+
+            'mca2020FirstName' => '',
+            'mca2020LastName' => '',
+            'mca2020Email' => '',
+
+            'msftContactFirstName' => '',
+            'msftContactLastName' => '',
+            'msftContactEmail' => '',
+        ];
+    }
+
+    /**
+     * @return string[]
+     */
+    private function getSharedMicrosoftDetails(): array
+    {
+        return [
+            'microsoftCancelPolicyAcknowledgement' =>
+                'I understand, and acknowledge that I will have a 7 calendar day window to cancel my subscription, or make quantity decrements before I am no longer able to make these changes. Once a subscription is locked, I will be required fulfill my elected commitment term of my subscription.',
+            'microsoftTrialConversion' =>
+                'I understand and acknowledge that at the conclusion of my Microsoft trial license period (30 days), my 25 trial subscriptions will automatically convert to 25 paid subscriptions.'
+        ];
+    }
+
+
+    /**
+     * @param array $details
+     * @return array
+     */
+    private function formatProvisioningDetails(array $details): array
+    {
+        return array_map(
+            fn($key, $value) => [
+                'key' => $key,
+                'values' => $value !== '' ? [$value] : [],
+            ],
+            array_keys($details),
+            $details
+        );
     }
 
     /**
