@@ -38,7 +38,6 @@ class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
     protected ?Client $client = null;
-
     protected ?string $token = null;
 
     public function __construct(Configuration $configuration)
@@ -79,7 +78,6 @@ class Provider extends Category implements ProviderInterface
      */
     public function create(CreateParams $params): CreateResult
     {
-
         if (!isset($params->package_identifier)) {
             $this->errorResult('Package identifier is required!');
         }
@@ -116,7 +114,13 @@ class Provider extends Category implements ProviderInterface
 
                 $address = $params->extra['address'];
 
-                $companyId = $this->createCompany($params->customer_name, $params->customer_email, $address, $params->customer_identifier, $phone);
+                $companyId = $this->createCompany(
+                    $params->customer_name,
+                    $params->customer_email,
+                    $address,
+                    $params->customer_identifier,
+                    $phone
+                );
             }
 
             $lineItem = [
@@ -153,7 +157,7 @@ class Provider extends Category implements ProviderInterface
                 $lineItem['billingTerm'] = 'Annual';
             }
 
-            $lineItem['provisioningDetails'] = $this->buildProvisioningDetails($params);;
+            $lineItem['provisioningDetails'] = $this->buildProvisioningDetails($params);
 
             $body = [
                 'companyId' => $companyId,
@@ -670,16 +674,15 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @param string $customer_name
-     * @param string $customer_email
-     * @param array $address
-     * @param string $website
-     * @param string $phone
-     * @return string
      * @throws GuzzleException
      */
-    private function createCompany(string $customer_name, string $customer_email, array $address, string $website, string $phone): string
-    {
+    private function createCompany(
+        string $customer_name,
+        string $customer_email,
+        array $address,
+        string $website,
+        string $phone
+    ): string {
         $body = [
             'address' => $address,
             'billOnBehalfOfEnabled' => false,
