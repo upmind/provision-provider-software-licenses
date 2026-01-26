@@ -167,6 +167,7 @@ class Provider extends Category implements ProviderInterface
             }
         }
 
+        // Now create the order to fetch the license.
         try {
             $lineItem = [
                 'productId' => $productId,
@@ -196,13 +197,20 @@ class Provider extends Category implements ProviderInterface
                 ],
             ];
 
-            $licenseId = null;
             $response = $this->makeRequest('orders', ['isMock' => 'false'], $body);
 
             foreach ($response['lineItems'] as $lineItem) {
                 if ((string) $lineItem['productId'] === $productId) {
                     $licenseId = $lineItem['subscriptionId'];
                 }
+            }
+
+            if (!isset($licenseId)) {
+                $this->errorResult('Unable to create license', [], [
+                    'service_identifier' => $params->service_identifier,
+                    'package_identifier' => $productId,
+                    'customer_identifier' => $companyId,
+                ]);
             }
 
             return CreateResult::create([
@@ -465,11 +473,9 @@ class Provider extends Category implements ProviderInterface
     {
         return [
             'msCustExists' => 'No, the customer does not have a Microsoft account',
-
             'mca2020FirstName' => $firstName,
             'mca2020LastName' => $lastName,
             'mca2020Email' => $email,
-
             'msftContactFirstName' => $firstName,
             'msftContactLastName' => $lastName,
             'msftContactEmail' => $email,
@@ -783,14 +789,13 @@ class Provider extends Category implements ProviderInterface
      */
     private function getProductDependencies(string $productId, string $billingTerm): ?array
     {
-
         $response = $this->makeRequest("products/{$productId}/dependencies", null, null, 'GET');
         if (!$response['commitmentDependencies']) {
             return null;
         }
 
         foreach ($response['commitmentDependencies'] as $dependency) {
-            if ($dependency['term'] == $billingTerm) {
+            if ((string) $dependency['term'] === $billingTerm) {
                 return $dependency;
             }
         }
