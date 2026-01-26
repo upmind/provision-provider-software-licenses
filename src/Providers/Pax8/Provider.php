@@ -230,7 +230,7 @@ class Provider extends Category implements ProviderInterface
     public function suspend(SuspendParams $params): EmptyResult
     {
         if ($this->isLicenseInProgress($params->license_key)) {
-            return EmptyResult::create()->setMessage('Provisioning task in progress');
+            $this->errorResult('License cannot be suspended while a Provisioning task is in progress');
         }
 
         if ($this->isLicenseExpired($params->license_key)) {
@@ -251,7 +251,7 @@ class Provider extends Category implements ProviderInterface
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
         if ($this->isLicenseInProgress($params->license_key)) {
-            return EmptyResult::create()->setMessage('Provisioning task in progress');
+            $this->errorResult('License cannot be suspended while a Provisioning task is in progress');
         }
 
         if ($this->isLicenseActive($params->license_key)) {
@@ -271,7 +271,7 @@ class Provider extends Category implements ProviderInterface
     public function terminate(TerminateParams $params): EmptyResult
     {
         if ($this->isLicenseInProgress($params->license_key)) {
-            return EmptyResult::create()->setMessage('Provisioning task in progress');
+            $this->errorResult('License cannot be terminated while a Provisioning task is in progress');
         }
 
         if ($this->isLicenseExpired($params->license_key)) {
