@@ -113,7 +113,7 @@ class Provider extends Category implements ProviderInterface
                 $billingTerm = '3-Year';
                 break;
             default:
-                $this->errorResult('Invalid billing cycle months!', [
+                $this->errorResult('Invalid billing cycle months!', [], [
                     'billing_cycle_months' => $params->billing_cycle_months,
                     'allowed_billing_cycle_months' => [null, 1, 12, 24, 36]
                 ]);
@@ -133,11 +133,9 @@ class Provider extends Category implements ProviderInterface
             $company = $this->getCompanyById($params->customer_identifier);
 
             if (!$company['id']) {
-                $this->errorResult(
-                    'Company not found',
-                    [],
-                    ['customer_identifier' => $params->customer_identifier]
-                );
+                $this->errorResult('Company not found', [], [
+                    'customer_identifier' => $params->customer_identifier
+                ]);
             }
 
             $companyId = (string) $company['id'];
