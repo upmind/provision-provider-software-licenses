@@ -201,6 +201,11 @@ class Provider extends Category implements ProviderInterface
                 if (isset($lineItem['productId']) && (string) $lineItem['productId'] === $productId) {
                     $licenseId = $lineItem['subscriptionId'] ?? null;
                 }
+
+                // Break early if we have found the license ID
+                if (isset($licenseId)) {
+                    break;
+                }
             }
 
             if (!isset($licenseId)) {
