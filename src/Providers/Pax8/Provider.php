@@ -198,8 +198,8 @@ class Provider extends Category implements ProviderInterface
             $response = $this->makeRequest('orders', ['isMock' => 'false'], $body);
 
             foreach ($response['lineItems'] as $lineItem) {
-                if ((string) $lineItem['productId'] === $productId) {
-                    $licenseId = $lineItem['subscriptionId'];
+                if (isset($lineItem['productId']) && (string) $lineItem['productId'] === $productId) {
+                    $licenseId = $lineItem['subscriptionId'] ?? null;
                 }
             }
 
