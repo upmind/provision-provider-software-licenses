@@ -19,6 +19,7 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateResult;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\CustomerAddressParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\EmptyResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\GetUsageParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\GetUsageResult;
@@ -118,38 +119,55 @@ class Provider extends Category implements ProviderInterface
                 ]);
         }
 
+        // First validate that either we have a customer identifier, or both address and service identifier.
+        if (empty($params->customer_identifier)
+            && (empty($params->customer_address) || empty($params->service_identifier))
+        ) {
+            $this->errorResult(
+                'Either Customer identifier or Customer address & Service identifier (company website) are required'
+            );
+        }
+
+        // First try to get company by customer identifier, if not found, continue to create a new one.
         try {
-            $companyId = null;
+            $company = $this->getCompanyById($params->customer_identifier);
 
-            if (!empty($params->customer_name)) {
-                $companyId = $this->getCompanyByName($params->customer_name);
-            }
-
-            if (!$companyId && !empty($params->company_name)) {
-                $company = $this->getCompanyById($params->company_name);
-                if ($company) {
-                    $companyId = $params->company_name;
-                }
-            }
-
-            if (!$companyId) {
-                if (!(isset($params->extra['address']))) {
-                    $this->errorResult('Extra.address is required!');
-                }
-
-                $phone = $params->extra['phone'] ?? '00000000';
-
-                $address = $params->extra['address'];
-
-                $companyId = $this->createCompany(
-                    $params->customer_name,
-                    $params->customer_email,
-                    $address,
-                    $params->customer_identifier,
-                    $phone
+            if (!$company['id']) {
+                $this->errorResult(
+                    'Company not found',
+                    [],
+                    ['customer_identifier' => $params->customer_identifier]
                 );
             }
 
+            $companyId = (string) $company['id'];
+        } catch (ClientException $ex) {
+            // If error other than not found, rethrow
+            if ($ex->getResponse()->getStatusCode() !== 404) {
+                $this->handleException($ex);
+            }
+
+            throw $ex;
+        } catch (Throwable $t) {
+            $this->handleException($t);
+        }
+
+        // If company not found, create a new one
+        if (!isset($companyId)) {
+            try {
+                $companyId = $this->createCompany(
+                    $params->customer_name,
+                    $params->customer_email,
+                    $params->customer_address,
+                    $params->service_identifier,
+                    $params->customer_phone ?? '00000000'
+                );
+            } catch (Throwable $e) {
+                $this->handleException($e);
+            }
+        }
+
+        try {
             $lineItem = [
                 'productId' => $productId,
                 'billingTerm' => $billingTerm,
@@ -180,14 +198,19 @@ class Provider extends Category implements ProviderInterface
 
             $licenseId = null;
             $response = $this->makeRequest('orders', ['isMock' => 'false'], $body);
+
             foreach ($response['lineItems'] as $lineItem) {
-                if ($lineItem['productId'] == $productId) {
+                if ((string) $lineItem['productId'] === $productId) {
                     $licenseId = $lineItem['subscriptionId'];
                 }
             }
 
-            return CreateResult::create(['license_key' => (string)$licenseId])
-                ->setMessage('License created');
+            return CreateResult::create([
+                'license_key' => (string) $licenseId,
+                'service_identifier' => $params->service_identifier,
+                'package_identifier' => $productId,
+                'customer_identifier' => $companyId,
+            ])->setMessage('License created');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -612,35 +635,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @param string $customer
-     * @return string|null
-     * @throws GuzzleException
-     */
-    private function getCompanyByName(string $customer): ?string
-    {
-        $query = [
-            'size' => 200,
-        ];
-
-        for ($page = 0; ; $page++) {
-            $query['page'] = $page;
-
-            $response = $this->makeRequest('companies', $query, null, 'GET');
-            if (!isset($response['content'])) {
-                return null;
-            }
-
-            foreach ($response['content'] as $company) {
-                if ($company['name'] === $customer) {
-                    return $company['id'];
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * @param string $companyId
      * @return array
      * @throws GuzzleException
@@ -648,7 +642,8 @@ class Provider extends Category implements ProviderInterface
     private function getCompanyById(string $companyId): array
     {
         $response = $this->makeRequest("companies/{$companyId}", null, null, 'GET');
-        return (array)$response;
+
+        return (array) $response;
     }
 
     /**
@@ -711,11 +706,12 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * @throws GuzzleException
+     * @throws ProvisionFunctionError
      */
     private function createCompany(
         string $customer_name,
         string $customer_email,
-        array $address,
+        CustomerAddressParams $address,
         string $website,
         string $phone
     ): string {
@@ -730,11 +726,16 @@ class Provider extends Category implements ProviderInterface
         ];
 
         $response = $this->makeRequest('companies', null, $body);
-        $companyId = $response['id'];
+
+        if (!isset($response['id'])) {
+            $this->errorResult('Unable to create company');
+        }
+
+        $companyId = (string) $response['id'];
 
         $this->createContacts($customer_name, $customer_email, $companyId, $phone);
 
-        return (string)$companyId;
+        return $companyId;
     }
 
     /**
@@ -752,7 +753,7 @@ class Provider extends Category implements ProviderInterface
 
         $contactBody = [
             'firstName' => $firstName,
-            'lastName' => $lastName != "" ? $lastName : $firstName,
+            'lastName' => $lastName !== '' ? $lastName : $firstName,
             'email' => $customer_email,
             'phone' => $phone,
             'types' => [
