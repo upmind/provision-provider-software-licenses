@@ -83,8 +83,14 @@ class Provider extends Category implements ProviderInterface
         }
 
         $productId = $this->getProductId($params->package_identifier);
+
+        // If product not found by name or SKU, try by ID
         if (!$productId) {
-            $productId = $this->getProductById($params->package_identifier);
+            try {
+                $productId = $this->getProductById($params->package_identifier);
+            } catch (Throwable $e) {
+                $this->handleException($e);
+            }
         }
 
         if (!$productId) {
@@ -642,7 +648,9 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @param string $value
+     * Find a product by its name or SKU.
+     *
+     * @param string $value // Product name or SKU
      * @return string|null
      * @throws GuzzleException
      */
@@ -651,17 +659,30 @@ class Provider extends Category implements ProviderInterface
         $query = [
             'search' => $value,
             'vendorName' => 'Microsoft',
-            'size' => 1,
+            'size' => 10, // Sensible loop
         ];
 
         $response = $this->makeRequest('products', $query, null, 'GET');
+
         if (!isset($response['content'])) {
             return null;
         }
 
-        return $response['content'][0]['id'];
-    }
+        $lowerCaseValue = mb_strtolower($value);
 
+        // Try to match the product, first by name, then by SKU
+        foreach ($response['content'] as $product) {
+            if (isset($product['name']) && mb_strtolower($product['name']) === $lowerCaseValue) {
+                return $product['id'];
+            }
+
+            if (isset($product['sku']) && mb_strtolower($product['sku']) === $lowerCaseValue) {
+                return $product['id'];
+            }
+        }
+
+        return null;
+    }
 
     /**
      * @param string $package_identifier
@@ -670,7 +691,18 @@ class Provider extends Category implements ProviderInterface
      */
     private function getProductById(string $package_identifier): ?string
     {
-        return $this->makeRequest("products/{$package_identifier}", null, null, 'GET')['id'];
+        try {
+            $product = $this->makeRequest("products/{$package_identifier}", null, null, 'GET');
+
+            return $product['id'] ?? null;
+        } catch (ClientException $e) {
+            // Not found
+            if ($e->getResponse()->getStatusCode() === 404) {
+                return null;
+            }
+
+            throw $e;
+        }
     }
 
     /**
