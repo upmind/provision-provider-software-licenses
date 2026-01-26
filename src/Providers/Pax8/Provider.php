@@ -234,12 +234,19 @@ class Provider extends Category implements ProviderInterface
      */
     public function renew(RenewParams $params): RenewResult
     {
+        try {
+            $this->unsuspend(UnsuspendParams::create([
+                'license_key' => $params->license_key,
+                'customer_identifier' => $params->customer_identifier,
+            ]));
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult('License cannot be unsuspended for renewal', [], [], $e);
+        }
 
-        $this->unsuspendSubscription($params->license_key);
         return RenewResult::create()
             ->setLicenseKey($params->license_key)
             ->setPackageIdentifier($params->package_identifier)
-            ->setMessage('Renewal not required for Pax8 licenses');
+            ->setMessage('License is active, renewal not required');
     }
 
     /**
@@ -630,7 +637,7 @@ class Provider extends Category implements ProviderInterface
      */
     private function unsuspendSubscription(string $subscriptionId, string $message = 'License unsuspended'): EmptyResult
     {
-        $date = new DateTime('now');
+        $date = new DateTime('now', 'UTC');
 
         $body = [
             'startDate' => $date->format('Y-m-d\TH:i:s.v')
