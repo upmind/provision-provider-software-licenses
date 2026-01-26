@@ -97,6 +97,27 @@ class Provider extends Category implements ProviderInterface
             $this->errorResult('Cannot find package!');
         }
 
+        switch ($params->billing_cycle_months) {
+            case null:
+            case 1:
+                $billingTerm = 'Monthly';
+                break;
+            case 12:
+                $billingTerm = 'Annual';
+                break;
+            case 24:
+                $billingTerm = '2-Year';
+                break;
+            case 36:
+                $billingTerm = '3-Year';
+                break;
+            default:
+                $this->errorResult('Invalid billing cycle months!', [
+                    'billing_cycle_months' => $params->billing_cycle_months,
+                    'allowed_billing_cycle_months' => [null, 1, 12, 24, 36]
+                ]);
+        }
+
         try {
             $companyId = null;
 
@@ -131,27 +152,10 @@ class Provider extends Category implements ProviderInterface
 
             $lineItem = [
                 'productId' => $productId,
-                'billingTerm' => 'Monthly',
+                'billingTerm' => $billingTerm,
                 'lineItemNumber' => 1,
                 'quantity' => 1,
             ];
-
-            if (isset($params->billing_cycle_months) && $params->billing_cycle_months > 1) {
-                switch ($params->billing_cycle_months) {
-                    case 12:
-                        $lineItem['billingTerm'] = 'Annual';
-                        break;
-                    case 24:
-                        $lineItem['billingTerm'] = '2-Year';
-                        break;
-                    case 36:
-                        $lineItem['billingTerm'] = '3-Year';
-                        break;
-                    default:
-                        $lineItem['billingTerm'] = 'Monthly';
-                        break;
-                }
-            }
 
             $dependency = $this->getProductDependencies($productId, $lineItem['billingTerm']);
             if ($dependency) {
