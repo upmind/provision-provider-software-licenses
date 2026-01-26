@@ -294,12 +294,13 @@ class Provider extends Category implements ProviderInterface
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
-        if ($this->isLicenseInProgress($params->license_key)) {
-            $this->errorResult('License cannot be suspended while a Provisioning task is in progress');
-        }
-
+        // First check if license is already active, no need for further action.
         if ($this->isLicenseActive($params->license_key)) {
             return EmptyResult::create()->setMessage('License already active');
+        }
+
+        if ($this->isLicenseInProgress($params->license_key)) {
+            $this->errorResult('License cannot be unsuspended while a Provisioning task is in progress');
         }
 
         return $this->unsuspendSubscription($params->license_key);
