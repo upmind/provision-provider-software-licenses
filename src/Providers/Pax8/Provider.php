@@ -248,11 +248,7 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws ProvisionFunctionError
-     * @throws \Throwable
      */
     public function changePackage(ChangePackageParams $params): ChangePackageResult
     {
@@ -260,8 +256,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
      * @throws ProvisionFunctionError
      */
     public function reissue(ReissueParams $params): ReissueResult
