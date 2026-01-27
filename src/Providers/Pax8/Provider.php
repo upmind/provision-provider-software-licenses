@@ -731,7 +731,14 @@ class Provider extends Category implements ProviderInterface
         string $phone
     ): string {
         $body = [
-            'address' => $address,
+            'address' => [
+                'street' => $address->address_1,
+                'street2' => $address->address_2 ?? '',
+                'city' => $address->city,
+                'stateOrProvince' => $address->state,
+                'postalCode' => $address->postcode,
+                'country' => $address->country_code
+            ],
             'billOnBehalfOfEnabled' => false,
             'selfServiceAllowed' => false,
             'orderApprovalRequired' => false,
