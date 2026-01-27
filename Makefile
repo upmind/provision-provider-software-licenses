@@ -49,7 +49,7 @@ start-containers:
 	docker compose up -d --build
 
 # Stop the dev environment
-stop-containers:
+stop-containers: --prep-docker-compose-file
 	docker compose down
 
 # Stop and remove all containers

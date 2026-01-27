@@ -19,6 +19,7 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\ChangePackageResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\CreateResult;
+use Upmind\ProvisionProviders\SoftwareLicenses\Data\CustomerAddressParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\EmptyResult;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\GetUsageParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\GetUsageResult;
@@ -38,8 +39,6 @@ class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
     protected ?Client $client = null;
-
-
     protected ?string $token = null;
 
     public function __construct(Configuration $configuration)
@@ -80,69 +79,98 @@ class Provider extends Category implements ProviderInterface
      */
     public function create(CreateParams $params): CreateResult
     {
-
         if (!isset($params->package_identifier)) {
             $this->errorResult('Package identifier is required!');
         }
 
         $productId = $this->getProductId($params->package_identifier);
+
+        // If product not found by name or SKU, try by ID
         if (!$productId) {
-            $productId = $this->getProductById($params->package_identifier);
+            try {
+                $productId = $this->getProductById($params->package_identifier);
+            } catch (Throwable $e) {
+                $this->handleException($e);
+            }
         }
 
         if (!$productId) {
             $this->errorResult('Cannot find package!');
         }
 
+        switch ($params->billing_cycle_months) {
+            case null:
+            case 1:
+                $billingTerm = 'Monthly';
+                break;
+            case 12:
+                $billingTerm = 'Annual';
+                break;
+            case 24:
+                $billingTerm = '2-Year';
+                break;
+            case 36:
+                $billingTerm = '3-Year';
+                break;
+            default:
+                $this->errorResult('Invalid billing cycle months!', [], [
+                    'billing_cycle_months' => $params->billing_cycle_months,
+                    'allowed_billing_cycle_months' => [null, 1, 12, 24, 36]
+                ]);
+        }
+
+        // First validate that either we have a customer identifier, or both address and service identifier.
+        if (empty($params->customer_identifier)
+            && (empty($params->customer_address) || empty($params->service_identifier))
+        ) {
+            $this->errorResult(
+                'Either Customer identifier or Customer address & Service identifier (company website) are required'
+            );
+        }
+
+        // First try to get company by customer identifier, if not found, continue to create a new one.
         try {
-            $companyId = null;
+            $company = $this->getCompanyById($params->customer_identifier);
 
-            if (!empty($params->customer_name)) {
-                $companyId = $this->getCompanyByName($params->customer_name);
+            if (!$company['id']) {
+                $this->errorResult('Company not found', [], [
+                    'customer_identifier' => $params->customer_identifier
+                ]);
             }
 
-            if (!$companyId && !empty($params->company_name)) {
-                $company = $this->getCompanyById($params->company_name);
-                if ($company) {
-                    $companyId = $params->company_name;
-                }
+            $companyId = (string) $company['id'];
+        } catch (ClientException $ex) {
+            // If error other than not found, rethrow, otherwise continue to create a new company.
+            if ($ex->getResponse()->getStatusCode() !== 404) {
+                $this->handleException($ex);
             }
+        } catch (Throwable $t) {
+            $this->handleException($t);
+        }
 
-            if (!$companyId) {
-                if (!(isset($params->extra['address']))) {
-                    $this->errorResult('Extra.address is required!');
-                }
-
-                $phone = $params->extra['phone'] ?? '00000000';
-
-                $address = $params->extra['address'];
-
-                $companyId = $this->createCompany($params->customer_name, $params->customer_email, $address, $params->customer_identifier, $phone);
+        // If company not found, create a new one
+        if (!isset($companyId)) {
+            try {
+                $companyId = $this->createCompany(
+                    $params->customer_name,
+                    $params->customer_email,
+                    $params->customer_address,
+                    $params->service_identifier,
+                    $params->customer_phone ?? '00000000'
+                );
+            } catch (Throwable $e) {
+                $this->handleException($e);
             }
+        }
 
+        // Now create the order to fetch the license.
+        try {
             $lineItem = [
                 'productId' => $productId,
-                'billingTerm' => 'Monthly',
+                'billingTerm' => $billingTerm,
                 'lineItemNumber' => 1,
                 'quantity' => 1,
             ];
-
-            if (isset($params->billing_cycle_months) && $params->billing_cycle_months > 1) {
-                switch ($params->billing_cycle_months) {
-                    case 12:
-                        $lineItem['billingTerm'] = 'Annual';
-                        break;
-                    case 24:
-                        $lineItem['billingTerm'] = '2-Year';
-                        break;
-                    case 36:
-                        $lineItem['billingTerm'] = '3-Year';
-                        break;
-                    default:
-                        $lineItem['billingTerm'] = 'Monthly';
-                        break;
-                }
-            }
 
             $dependency = $this->getProductDependencies($productId, $lineItem['billingTerm']);
             if ($dependency) {
@@ -150,11 +178,11 @@ class Provider extends Category implements ProviderInterface
                 $lineItem['billingTerm'] = $dependency['term'];
             }
 
-            if ($lineItem['billingTerm'] == '1-Year') {
+            if ($lineItem['billingTerm'] === '1-Year') {
                 $lineItem['billingTerm'] = 'Annual';
             }
 
-            $lineItem['provisioningDetails'] = $this->buildProvisioningDetails($params);;
+            $lineItem['provisioningDetails'] = $this->buildProvisioningDetails($params);
 
             $body = [
                 'companyId' => $companyId,
@@ -165,115 +193,36 @@ class Provider extends Category implements ProviderInterface
                 ],
             ];
 
-            $licenseId = null;
             $response = $this->makeRequest('orders', ['isMock' => 'false'], $body);
+
             foreach ($response['lineItems'] as $lineItem) {
-                if ($lineItem['productId'] == $productId) {
-                    $licenseId = $lineItem['subscriptionId'];
+                if (isset($lineItem['productId']) && (string) $lineItem['productId'] === $productId) {
+                    $licenseId = $lineItem['subscriptionId'] ?? null;
+                }
+
+                // Break early if we have found the license ID
+                if (isset($licenseId)) {
+                    break;
                 }
             }
 
-            return CreateResult::create(['license_key' => (string)$licenseId])
-                ->setMessage('License created');
+            if (!isset($licenseId)) {
+                $this->errorResult('Unable to create license', [], [
+                    'service_identifier' => $params->service_identifier,
+                    'package_identifier' => $productId,
+                    'customer_identifier' => $companyId,
+                ]);
+            }
+
+            return CreateResult::create([
+                'license_key' => (string) $licenseId,
+                'service_identifier' => $params->service_identifier,
+                'package_identifier' => $productId,
+                'customer_identifier' => $companyId,
+            ])->setMessage('License created');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
-    }
-
-
-    /**
-     * @param CreateParams $params
-     * @return array
-     */
-    function buildProvisioningDetails(CreateParams $params): array
-    {
-        $sharedDetails = $this->getSharedMicrosoftDetails();
-
-        if (isset($params->customer_identifier)) {
-            $details = $this->getExistingCustomerDetails($params->customer_identifier);
-        } else {
-            @[$firstName, $lastName] = explode(' ', $params->customer_name, 2);
-            $details = $this->getNewCustomerDetails($firstName, $lastName, $params->customer_email ?? '');
-        }
-
-        $details = array_merge($details, $sharedDetails);
-
-        return $this->formatProvisioningDetails($details);
-    }
-
-    /**
-     * @param string $firstName
-     * @param string $lastName
-     * @param string $email
-     * @return string[]
-     */
-    function getNewCustomerDetails(
-        string $firstName,
-        string $lastName,
-        string $email
-    ): array
-    {
-        return [
-            'msCustExists' => 'No, the customer does not have a Microsoft account',
-
-            'mca2020FirstName' => $firstName,
-            'mca2020LastName' => $lastName,
-            'mca2020Email' => $email,
-
-            'msftContactFirstName' => $firstName,
-            'msftContactLastName' => $lastName,
-            'msftContactEmail' => $email,
-        ];
-    }
-
-    /**
-     * @param string $tenantId
-     * @return string[]
-     */
-    function getExistingCustomerDetails(string $tenantId): array
-    {
-        return [
-            'msCustExists' => 'Yes, the customer has and can log into their Microsoft account',
-            'msTenantId' => $tenantId,
-
-            'mca2020FirstName' => '',
-            'mca2020LastName' => '',
-            'mca2020Email' => '',
-
-            'msftContactFirstName' => '',
-            'msftContactLastName' => '',
-            'msftContactEmail' => '',
-        ];
-    }
-
-    /**
-     * @return string[]
-     */
-    function getSharedMicrosoftDetails(): array
-    {
-        return [
-            'microsoftCancelPolicyAcknowledgement' =>
-                'I understand, and acknowledge that I will have a 7 calendar day window to cancel my subscription, or make quantity decrements before I am no longer able to make these changes. Once a subscription is locked, I will be required fulfill my elected commitment term of my subscription.',
-            'microsoftTrialConversion' =>
-                'I understand and acknowledge that at the conclusion of my Microsoft trial license period (30 days), my 25 trial subscriptions will automatically convert to 25 paid subscriptions.'
-        ];
-    }
-
-
-    /**
-     * @param array $details
-     * @return array
-     */
-    function formatProvisioningDetails(array $details): array
-    {
-        return array_map(
-            fn($key, $value) => [
-                'key' => $key,
-                'values' => $value !== '' ? [$value] : [],
-            ],
-            array_keys($details),
-            $details
-        );
     }
 
     /**
@@ -283,30 +232,19 @@ class Provider extends Category implements ProviderInterface
      */
     public function renew(RenewParams $params): RenewResult
     {
+        try {
+            $this->unsuspend(UnsuspendParams::create([
+                'license_key' => $params->license_key,
+                'customer_identifier' => $params->customer_identifier,
+            ]));
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult('License cannot be unsuspended for renewal', [], [], $e);
+        }
 
-        $this->unsuspendSubscription($params->license_key);
         return RenewResult::create()
             ->setLicenseKey($params->license_key)
             ->setPackageIdentifier($params->package_identifier)
-            ->setMessage('Renewal not required for Pax8 licenses');
-    }
-
-    /**
-     * Get license data by key.
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws ProvisionFunctionError
-     * @throws \Throwable
-     */
-    protected function getSubscription(string $license_key): ?array
-    {
-        try {
-            $response = $this->makeRequest("subscriptions/{$license_key}", null, null, 'GET');
-            return (array)$response;
-
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+            ->setMessage('License is active, renewal not required');
     }
 
     /**
@@ -341,7 +279,7 @@ class Provider extends Category implements ProviderInterface
     public function suspend(SuspendParams $params): EmptyResult
     {
         if ($this->isLicenseInProgress($params->license_key)) {
-            return EmptyResult::create()->setMessage('Provisioning task in progress');
+            $this->errorResult('License cannot be suspended while a Provisioning task is in progress');
         }
 
         if ($this->isLicenseExpired($params->license_key)) {
@@ -361,12 +299,13 @@ class Provider extends Category implements ProviderInterface
      */
     public function unsuspend(UnsuspendParams $params): EmptyResult
     {
-        if ($this->isLicenseInProgress($params->license_key)) {
-            return EmptyResult::create()->setMessage('Provisioning task in progress');
-        }
-
+        // First check if license is already active, no need for further action.
         if ($this->isLicenseActive($params->license_key)) {
             return EmptyResult::create()->setMessage('License already active');
+        }
+
+        if ($this->isLicenseInProgress($params->license_key)) {
+            $this->errorResult('License cannot be unsuspended while a Provisioning task is in progress');
         }
 
         return $this->unsuspendSubscription($params->license_key);
@@ -382,7 +321,7 @@ class Provider extends Category implements ProviderInterface
     public function terminate(TerminateParams $params): EmptyResult
     {
         if ($this->isLicenseInProgress($params->license_key)) {
-            return EmptyResult::create()->setMessage('Provisioning task in progress');
+            $this->errorResult('License cannot be terminated while a Provisioning task is in progress');
         }
 
         if ($this->isLicenseExpired($params->license_key)) {
@@ -390,71 +329,6 @@ class Provider extends Category implements ProviderInterface
         }
 
         return $this->cancelSubscription($params->license_key);
-    }
-
-    protected function client(): Client
-    {
-        if (isset($this->client)) {
-            return $this->client;
-        }
-
-        $client = new Client([
-            'base_uri' => 'https://api.pax8.com',
-            'connect_timeout' => 10,
-            'headers' => [
-                'accept' => 'application/json',
-                'content-type' => 'application/json',
-            ],
-            'timeout' => 60,
-            'handler' => $this->getGuzzleHandlerStack(),
-        ]);
-
-        return $this->client = $client;
-    }
-
-    /**
-     * @throws ProvisionFunctionError
-     * @throws RuntimeException
-     */
-    private function getAuthToken(): string
-    {
-        $body = [
-            'client_id' => $this->configuration->clientId,
-            'client_secret' => $this->configuration->clientSecret,
-            'audience' => 'https://api.pax8.com',
-            'grant_type' => 'client_credentials',
-        ];
-
-        $response = $this->makeRequest('token', null, $body);
-
-        return $response['access_token'];
-    }
-
-    /**
-     * @return no-return
-     * @throws \Throwable
-     *
-     */
-    protected function handleException(Throwable $e): void
-    {
-        if (($e instanceof ClientException || $e instanceof ServerException) && $e->hasResponse()) {
-            /** @var \Psr\Http\Message\ResponseInterface $response */
-            $response = $e->getResponse();
-
-            $responseBody = $response->getBody()->__toString();
-            $responseData = json_decode($responseBody, true);
-
-            $errorMessage = $responseData['message'] ?? null;
-
-            $this->errorResult(
-                sprintf('Provider API Error: %s', $errorMessage),
-                ['response_data' => $responseData],
-                [],
-                $e
-            );
-        }
-
-        throw $e;
     }
 
     /**
@@ -493,6 +367,178 @@ class Provider extends Category implements ProviderInterface
         }
 
         return $this->parseResponseData($result);
+    }
+
+    /**
+     * @return no-return
+     * @throws \Throwable
+     *
+     */
+    protected function handleException(Throwable $e): void
+    {
+        if (($e instanceof ClientException || $e instanceof ServerException) && $e->hasResponse()) {
+            /** @var \Psr\Http\Message\ResponseInterface $response */
+            $response = $e->getResponse();
+
+            $responseBody = $response->getBody()->__toString();
+            $responseData = json_decode($responseBody, true);
+
+            $errorMessage = $responseData['message'] ?? null;
+
+            $this->errorResult(
+                sprintf('Provider API Error: %s', $errorMessage),
+                ['response_data' => $responseData],
+                [],
+                $e
+            );
+        }
+
+        throw $e;
+    }
+
+    protected function client(): Client
+    {
+        if (isset($this->client)) {
+            return $this->client;
+        }
+
+        $client = new Client([
+            'base_uri' => 'https://api.pax8.com',
+            'connect_timeout' => 10,
+            'headers' => [
+                'accept' => 'application/json',
+                'content-type' => 'application/json',
+            ],
+            'timeout' => 60,
+            'handler' => $this->getGuzzleHandlerStack(),
+        ]);
+
+        return $this->client = $client;
+    }
+
+    /**
+     * Get license data by key.
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws ProvisionFunctionError
+     * @throws \Throwable
+     */
+    protected function getSubscription(string $license_key): ?array
+    {
+        try {
+            $response = $this->makeRequest("subscriptions/{$license_key}", null, null, 'GET');
+            return (array)$response;
+
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
+    }
+
+    /**
+     * @throws ProvisionFunctionError
+     * @throws RuntimeException
+     */
+    private function getAuthToken(): string
+    {
+        $body = [
+            'client_id' => $this->configuration->client_id,
+            'client_secret' => $this->configuration->client_secret,
+            'audience' => 'https://api.pax8.com',
+            'grant_type' => 'client_credentials',
+        ];
+
+        $response = $this->makeRequest('token', null, $body);
+
+        return $response['access_token'];
+    }
+
+    /**
+     * @param CreateParams $params
+     * @return array
+     */
+    private function buildProvisioningDetails(CreateParams $params): array
+    {
+        $sharedDetails = $this->getSharedMicrosoftDetails();
+
+        if (isset($params->customer_identifier)) {
+            $details = $this->getExistingCustomerDetails($params->customer_identifier);
+        } else {
+            @[$firstName, $lastName] = explode(' ', $params->customer_name, 2);
+            $details = $this->getNewCustomerDetails($firstName, $lastName, $params->customer_email ?? '');
+        }
+
+        $details = array_merge($details, $sharedDetails);
+
+        return $this->formatProvisioningDetails($details);
+    }
+
+    /**
+     * @param string $firstName
+     * @param string $lastName
+     * @param string $email
+     * @return string[]
+     */
+    private function getNewCustomerDetails(string $firstName, string $lastName, string $email): array
+    {
+        return [
+            'msCustExists' => 'No, the customer does not have a Microsoft account',
+            'mca2020FirstName' => $firstName,
+            'mca2020LastName' => $lastName,
+            'mca2020Email' => $email,
+            'msftContactFirstName' => $firstName,
+            'msftContactLastName' => $lastName,
+            'msftContactEmail' => $email,
+        ];
+    }
+
+    /**
+     * @param string $tenantId
+     * @return string[]
+     */
+    private function getExistingCustomerDetails(string $tenantId): array
+    {
+        return [
+            'msCustExists' => 'Yes, the customer has and can log into their Microsoft account',
+            'msTenantId' => $tenantId,
+
+            'mca2020FirstName' => '',
+            'mca2020LastName' => '',
+            'mca2020Email' => '',
+
+            'msftContactFirstName' => '',
+            'msftContactLastName' => '',
+            'msftContactEmail' => '',
+        ];
+    }
+
+    /**
+     * @return string[]
+     */
+    private function getSharedMicrosoftDetails(): array
+    {
+        return [
+            'microsoftCancelPolicyAcknowledgement' =>
+                'I understand, and acknowledge that I will have a 7 calendar day window to cancel my subscription, or make quantity decrements before I am no longer able to make these changes. Once a subscription is locked, I will be required fulfill my elected commitment term of my subscription.',
+            'microsoftTrialConversion' =>
+                'I understand and acknowledge that at the conclusion of my Microsoft trial license period (30 days), my 25 trial subscriptions will automatically convert to 25 paid subscriptions.'
+        ];
+    }
+
+
+    /**
+     * @param array $details
+     * @return array
+     */
+    private function formatProvisioningDetails(array $details): array
+    {
+        return array_map(
+            fn($key, $value) => [
+                'key' => $key,
+                'values' => $value !== '' ? [$value] : [],
+            ],
+            array_keys($details),
+            $details
+        );
     }
 
     /**
@@ -589,7 +635,7 @@ class Provider extends Category implements ProviderInterface
      */
     private function unsuspendSubscription(string $subscriptionId, string $message = 'License unsuspended'): EmptyResult
     {
-        $date = new DateTime('now');
+        $date = new DateTime('now', 'UTC');
 
         $body = [
             'startDate' => $date->format('Y-m-d\TH:i:s.v')
@@ -604,33 +650,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @param string $customer
-     * @return string|null
-     * @throws GuzzleException
-     */
-    private function getCompanyByName(string $customer): ?string
-    {
-        $query = [
-            'size' => 200,
-        ];
-
-        for ($page = 0; ; $page++) {
-            $query['page'] = $page;
-
-            $response = $this->makeRequest('companies', $query, null, 'GET');
-            if (!isset($response['content'])) {
-                return null;
-            }
-
-            foreach ($response['content'] as $company) {
-                if ($company['name'] === $customer) {
-                    return $company['id'];
-                }
-            }
-        }
-    }
-
-    /**
      * @param string $companyId
      * @return array
      * @throws GuzzleException
@@ -638,11 +657,14 @@ class Provider extends Category implements ProviderInterface
     private function getCompanyById(string $companyId): array
     {
         $response = $this->makeRequest("companies/{$companyId}", null, null, 'GET');
-        return (array)$response;
+
+        return (array) $response;
     }
 
     /**
-     * @param string $value
+     * Find a product by its name or SKU.
+     *
+     * @param string $value // Product name or SKU
      * @return string|null
      * @throws GuzzleException
      */
@@ -651,17 +673,30 @@ class Provider extends Category implements ProviderInterface
         $query = [
             'search' => $value,
             'vendorName' => 'Microsoft',
-            'size' => 1,
+            'size' => 10, // Sensible loop
         ];
 
         $response = $this->makeRequest('products', $query, null, 'GET');
+
         if (!isset($response['content'])) {
             return null;
         }
 
-        return $response['content'][0]['id'];
-    }
+        $lowerCaseValue = mb_strtolower($value);
 
+        // Try to match the product, first by name, then by SKU
+        foreach ($response['content'] as $product) {
+            if (isset($product['name']) && mb_strtolower($product['name']) === $lowerCaseValue) {
+                return $product['id'];
+            }
+
+            if (isset($product['sku']) && mb_strtolower($product['sku']) === $lowerCaseValue) {
+                return $product['id'];
+            }
+        }
+
+        return null;
+    }
 
     /**
      * @param string $package_identifier
@@ -670,20 +705,31 @@ class Provider extends Category implements ProviderInterface
      */
     private function getProductById(string $package_identifier): ?string
     {
-        return $this->makeRequest("products/{$package_identifier}", null, null, 'GET')['id'];
+        try {
+            $product = $this->makeRequest("products/{$package_identifier}", null, null, 'GET');
+
+            return $product['id'] ?? null;
+        } catch (ClientException $e) {
+            // Not found
+            if ($e->getResponse()->getStatusCode() === 404) {
+                return null;
+            }
+
+            throw $e;
+        }
     }
 
     /**
-     * @param string $customer_name
-     * @param string $customer_email
-     * @param array $address
-     * @param string $website
-     * @param string $phone
-     * @return string
      * @throws GuzzleException
+     * @throws ProvisionFunctionError
      */
-    private function createCompany(string $customer_name, string $customer_email, array $address, string $website, string $phone): string
-    {
+    private function createCompany(
+        string $customer_name,
+        string $customer_email,
+        CustomerAddressParams $address,
+        string $website,
+        string $phone
+    ): string {
         $body = [
             'address' => $address,
             'billOnBehalfOfEnabled' => false,
@@ -695,11 +741,16 @@ class Provider extends Category implements ProviderInterface
         ];
 
         $response = $this->makeRequest('companies', null, $body);
-        $companyId = $response['id'];
+
+        if (!isset($response['id'])) {
+            $this->errorResult('Unable to create company');
+        }
+
+        $companyId = (string) $response['id'];
 
         $this->createContacts($customer_name, $customer_email, $companyId, $phone);
 
-        return (string)$companyId;
+        return $companyId;
     }
 
     /**
@@ -714,9 +765,10 @@ class Provider extends Category implements ProviderInterface
     {
         @[$firstName, $lastName] = explode(' ', $customer_name, 2);
 
+
         $contactBody = [
             'firstName' => $firstName,
-            'lastName' => $lastName != "" ? $lastName : $firstName,
+            'lastName' => $lastName !== '' ? $lastName : $firstName,
             'email' => $customer_email,
             'phone' => $phone,
             'types' => [
@@ -746,14 +798,13 @@ class Provider extends Category implements ProviderInterface
      */
     private function getProductDependencies(string $productId, string $billingTerm): ?array
     {
-
         $response = $this->makeRequest("products/{$productId}/dependencies", null, null, 'GET');
         if (!$response['commitmentDependencies']) {
             return null;
         }
 
         foreach ($response['commitmentDependencies'] as $dependency) {
-            if ($dependency['term'] == $billingTerm) {
+            if ((string) $dependency['term'] === $billingTerm) {
                 return $dependency;
             }
         }

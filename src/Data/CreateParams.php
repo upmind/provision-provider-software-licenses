@@ -10,6 +10,8 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
 /**
  * @property-read string $customer_name Name of the customer
  * @property-read string $customer_email Email address of the customer
+ * @property-read string|null $customer_phone Phone number of the customer in international format
+ * @property-read CustomerAddressParams|null $customer_address Address of the customer
  * @property-read string|null $company_name Company name of the customer
  * @property-read string|int|null $customer_identifier Service customer identifier, if already created
  * @property-read string|null $service_identifier Secondary service identifier to use, if known up-front
@@ -25,6 +27,8 @@ class CreateParams extends DataSet
         return new Rules([
             'customer_name' => ['required', 'string'],
             'customer_email' => ['required', 'email'],
+            'customer_phone' => ['nullable', 'string', 'international_phone'],
+            'customer_address' => ['nullable', CustomerAddressParams::class],
             'company_name' => ['nullable', 'string'],
             'customer_identifier' => ['nullable'],
             'service_identifier' => ['nullable', 'string'],
