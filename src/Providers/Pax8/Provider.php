@@ -140,12 +140,10 @@ class Provider extends Category implements ProviderInterface
 
             $companyId = (string) $company['id'];
         } catch (ClientException $ex) {
-            // If error other than not found, rethrow
+            // If error other than not found, rethrow, otherwise continue to create a new company.
             if ($ex->getResponse()->getStatusCode() !== 404) {
                 $this->handleException($ex);
             }
-
-            throw $ex;
         } catch (Throwable $t) {
             $this->handleException($t);
         }
