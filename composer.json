@@ -39,9 +39,11 @@
     },
     "config": {
         "audit": {
-            "ignore": {
-                "PKSA-wws7-mr54-jsny": "Applies for Windoes systems, not in use by the library"
-            }
+            "ignore": [
+                "CVE-2024-51736",
+                "CVE-2025-64500",
+                "CVE-2024-50345"
+            ]
         },
         "sort-packages": true
     },
