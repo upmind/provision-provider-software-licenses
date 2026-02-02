@@ -40,6 +40,7 @@ class Provider extends Category implements ProviderInterface
     protected Configuration $configuration;
     protected ?Client $client = null;
     protected ?string $token = null;
+    private ?string $customerDomainPrefix = null;
 
     public function __construct(Configuration $configuration)
     {
@@ -119,60 +120,59 @@ class Provider extends Category implements ProviderInterface
                 ]);
         }
 
-        // First validate that either we have a customer identifier, or both address and service identifier.
-        if (empty($params->customer_identifier)
-            && (empty($params->customer_address) || empty($params->service_identifier))
-        ) {
+        // First validate that either we have a customer identifier, or a customer address.
+        if (empty($params->customer_identifier) && empty($params->customer_address)) {
             $this->errorResult(
-                'Either Customer identifier or Customer address & Service identifier (company website) are required'
+                'Either Customer identifier or Customer address is required'
             );
         }
 
-        // First try to get company by customer identifier, if not found, continue to create a new one.
-        try {
-            $company = $this->getCompanyById($params->customer_identifier);
+        // If customer identifier is provided, try to get the company
+        if (!empty($params->customer_identifier)) {
+            try {
+                $company = $this->getCompanyById($params->customer_identifier);
 
-            if (!$company['id']) {
-                $this->errorResult('Company not found', [], [
-                    'customer_identifier' => $params->customer_identifier
-                ]);
+                $companyId = (string) $company['id'];
+
+                // Now build provisioning details for existing customer.
+                $provisioningDetails = $this->buildProvisioningDetails($params, null, true);
+            } catch (Throwable $t) {
+                $this->handleException($t);
             }
+        } else {
+            // If not an existing company, create it.
 
-            $companyId = (string) $company['id'];
-        } catch (ClientException $ex) {
-            // If error other than not found, rethrow, otherwise continue to create a new company.
-            if ($ex->getResponse()->getStatusCode() !== 404) {
-                $this->handleException($ex);
-            }
-        } catch (Throwable $t) {
-            $this->handleException($t);
-        }
+            // Use phone library to handle in local format.
+            $customerPhone = $params->customer_phone !== null ? phone($params->customer_phone) : '00000000';
 
-        // If company not found, create a new one
-        if (!isset($companyId)) {
             try {
                 $companyId = $this->createCompany(
                     $params->customer_name,
                     $params->customer_email,
                     $params->customer_address,
-                    $params->service_identifier,
-                    $params->customer_phone ?? '00000000'
+                    $params->service_identifier ?? $this->getCustomerDomainPrefix(),
+                    is_string($customerPhone) ? $customerPhone : $customerPhone->formatNational()
                 );
+
+                // Now build provisioning details for new customer.
+                $provisioningDetails = $this->buildProvisioningDetails($params, $this->getCustomerDomainPrefix());
             } catch (Throwable $e) {
                 $this->handleException($e);
             }
         }
 
         // Now create the order to fetch the license.
-        try {
-            $lineItem = [
-                'productId' => $productId,
-                'billingTerm' => $billingTerm,
-                'lineItemNumber' => 1,
-                'quantity' => 1,
-            ];
+        $lineItem = [
+            'productId' => $productId,
+            'billingTerm' => $billingTerm,
+            'lineItemNumber' => 1,
+            'quantity' => 1,
+            'provisioningDetails' => $provisioningDetails,
+        ];
 
+        try {
             $dependency = $this->getProductDependencies($productId, $lineItem['billingTerm']);
+
             if ($dependency) {
                 $lineItem['commitmentTermId'] = $dependency['id'];
                 $lineItem['billingTerm'] = $dependency['term'];
@@ -181,8 +181,6 @@ class Provider extends Category implements ProviderInterface
             if ($lineItem['billingTerm'] === '1-Year') {
                 $lineItem['billingTerm'] = 'Annual';
             }
-
-            $lineItem['provisioningDetails'] = $this->buildProvisioningDetails($params);
 
             $body = [
                 'companyId' => $companyId,
@@ -208,7 +206,6 @@ class Provider extends Category implements ProviderInterface
 
             if (!isset($licenseId)) {
                 $this->errorResult('Unable to create license', [], [
-                    'service_identifier' => $params->service_identifier,
                     'package_identifier' => $productId,
                     'customer_identifier' => $companyId,
                 ]);
@@ -216,7 +213,6 @@ class Provider extends Category implements ProviderInterface
 
             return CreateResult::create([
                 'license_key' => (string) $licenseId,
-                'service_identifier' => $params->service_identifier,
                 'package_identifier' => $productId,
                 'customer_identifier' => $companyId,
             ])->setMessage('License created');
@@ -352,7 +348,7 @@ class Provider extends Category implements ProviderInterface
         }
 
         $response = $this->client()->request($method, "/v1/{$command}", $requestParams);
-        $result = $response->getBody()->getContents();
+        $result = $response->getBody()->__toString();
 
         $response->getBody()->close();
 
@@ -446,19 +442,23 @@ class Provider extends Category implements ProviderInterface
         return $response['access_token'];
     }
 
-    /**
-     * @param CreateParams $params
-     * @return array
-     */
-    private function buildProvisioningDetails(CreateParams $params): array
-    {
+    private function buildProvisioningDetails(
+        CreateParams $params,
+        ?string $domainPrefix,
+        bool $existingCustomer = false
+    ): array {
         $sharedDetails = $this->getSharedMicrosoftDetails();
 
-        if (isset($params->customer_identifier)) {
+        if ($existingCustomer) {
             $details = $this->getExistingCustomerDetails($params->customer_identifier);
         } else {
             @[$firstName, $lastName] = explode(' ', $params->customer_name, 2);
-            $details = $this->getNewCustomerDetails($firstName, $lastName, $params->customer_email ?? '');
+            $details = $this->getNewCustomerDetails(
+                $firstName,
+                $lastName,
+                $params->customer_email,
+                $domainPrefix ?? $this->getCustomerDomainPrefix(),
+            );
         }
 
         $details = array_merge($details, $sharedDetails);
@@ -467,12 +467,9 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @param string $firstName
-     * @param string $lastName
-     * @param string $email
      * @return string[]
      */
-    private function getNewCustomerDetails(string $firstName, string $lastName, string $email): array
+    private function getNewCustomerDetails(string $firstName, string $lastName, string $email, string $domain): array
     {
         return [
             'msCustExists' => 'No, the customer does not have a Microsoft account',
@@ -482,6 +479,7 @@ class Provider extends Category implements ProviderInterface
             'msftContactFirstName' => $firstName,
             'msftContactLastName' => $lastName,
             'msftContactEmail' => $email,
+            'msDomain' => $domain,
         ];
     }
 
@@ -494,11 +492,9 @@ class Provider extends Category implements ProviderInterface
         return [
             'msCustExists' => 'Yes, the customer has and can log into their Microsoft account',
             'msTenantId' => $tenantId,
-
             'mca2020FirstName' => '',
             'mca2020LastName' => '',
             'mca2020Email' => '',
-
             'msftContactFirstName' => '',
             'msftContactLastName' => '',
             'msftContactEmail' => '',
@@ -518,11 +514,6 @@ class Provider extends Category implements ProviderInterface
         ];
     }
 
-
-    /**
-     * @param array $details
-     * @return array
-     */
     private function formatProvisioningDetails(array $details): array
     {
         return array_map(
@@ -542,7 +533,7 @@ class Provider extends Category implements ProviderInterface
     {
         $parsedResult = json_decode($result, true);
 
-        if (!$parsedResult && $parsedResult != []) {
+        if (!$parsedResult && $parsedResult !== []) {
             throw ProvisionFunctionError::create('Unknown Provider API Error')
                 ->withData([
                     'response' => $result,
@@ -766,7 +757,6 @@ class Provider extends Category implements ProviderInterface
     {
         @[$firstName, $lastName] = explode(' ', $customer_name, 2);
 
-
         $contactBody = [
             'firstName' => $firstName,
             'lastName' => $lastName !== '' ? $lastName : $firstName,
@@ -800,7 +790,8 @@ class Provider extends Category implements ProviderInterface
     private function getProductDependencies(string $productId, string $billingTerm): ?array
     {
         $response = $this->makeRequest("products/{$productId}/dependencies", null, null, 'GET');
-        if (!$response['commitmentDependencies']) {
+
+        if (!isset($response['commitmentDependencies'])) {
             return null;
         }
 
@@ -811,5 +802,17 @@ class Provider extends Category implements ProviderInterface
         }
 
         return $response['commitmentDependencies'][0];
+    }
+
+    /**
+     * Get a generated unique domain prefix for the customer.
+     */
+    private function getCustomerDomainPrefix(): string
+    {
+        if ($this->customerDomainPrefix === null) {
+            $this->customerDomainPrefix = bin2hex(random_bytes(8));
+        }
+
+        return $this->customerDomainPrefix;
     }
 }
