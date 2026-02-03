@@ -529,7 +529,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * @throws ProvisionFunctionError
      */
-    private function parseResponseData(string $result): ?array
+    private function parseResponseData(string $result): array
     {
         $parsedResult = json_decode($result, true);
 
