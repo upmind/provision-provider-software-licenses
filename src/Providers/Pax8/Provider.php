@@ -229,19 +229,24 @@ class Provider extends Category implements ProviderInterface
      */
     public function renew(RenewParams $params): RenewResult
     {
-        try {
-            $this->unsuspend(UnsuspendParams::create([
-                'license_key' => $params->license_key,
-                'customer_identifier' => $params->customer_identifier,
-            ]));
-        } catch (ProvisionFunctionError $e) {
-            $this->errorResult('License cannot be unsuspended for renewal', [], [], $e);
+        if ($this->isLicenseActive($params->license_key)) {
+            return RenewResult::create()
+                ->setLicenseKey($params->license_key)
+                ->setPackageIdentifier($params->package_identifier)
+                ->setMessage('License is active, renewal not required');
         }
+
+        if ($this->isLicenseInProgress($params->license_key)) {
+            $this->errorResult('License cannot be renewed while a Provisioning task is in progress');
+        }
+
+        // Other states mean expired, so we can just unsuspend it.
+        $this->unsuspendSubscription($params->license_key);
 
         return RenewResult::create()
             ->setLicenseKey($params->license_key)
             ->setPackageIdentifier($params->package_identifier)
-            ->setMessage('License is active, renewal not required');
+            ->setMessage('License was expired, unsuspended for renewal');
     }
 
     /**
