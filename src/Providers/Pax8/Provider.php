@@ -541,7 +541,6 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
-
     /**
      * Is a license active?
      *
