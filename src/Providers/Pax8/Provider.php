@@ -9,6 +9,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\ServerException;
+use JsonException;
 use RuntimeException;
 use Throwable;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -531,16 +532,13 @@ class Provider extends Category implements ProviderInterface
      */
     private function parseResponseData(string $result): array
     {
-        $parsedResult = json_decode($result, true);
-
-        if (!$parsedResult && $parsedResult !== []) {
-            throw ProvisionFunctionError::create('Unknown Provider API Error')
-                ->withData([
-                    'response' => $result,
-                ]);
+        try {
+            return json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $ex) {
+            $this->errorResult('Unknown Provider API Error', [
+                'response' => $result
+            ], [], $ex);
         }
-
-        return $parsedResult;
     }
 
 
