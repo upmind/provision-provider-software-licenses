@@ -42,6 +42,7 @@ The following providers are currently implemented:
   - [WHMCS](https://assets.whmcs.com/reseller/api/whmcs-reseller-api-docs-v3.2.pdf)
   - [cPanel](https://docs.cpanel.net/manage2/api/)
   - [IspManager](https://www.ispmanager.com/docs/for-partners/reselling-of-ispmanager-licenses-via-api)
+  - [Pax8](https://devx.pax8.com/reference/createaccesstoken)
 
 ## Functions
 

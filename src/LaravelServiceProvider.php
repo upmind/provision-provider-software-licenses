@@ -11,6 +11,7 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Blesta\Provider as Bles
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\WHMCS\Provider as WHMCSProvider;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\CPanel\Provider as CPanelProvider;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Ispmanager\Provider as IspmanagerProvider;
+use Upmind\ProvisionProviders\SoftwareLicenses\Providers\Pax8\Provider as Pax8Provider;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
 {
@@ -25,5 +26,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('software-licenses', 'whmcs', WHMCSProvider::class);
         $this->bindProvider('software-licenses', 'cpanel', CPanelProvider::class);
         $this->bindProvider('software-licenses', 'ispmanager', IspmanagerProvider::class);
+        $this->bindProvider('software-licenses', 'pax8', Pax8Provider::class);
     }
 }
