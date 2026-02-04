@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\SoftwareLicenses\Providers\Pax8;
 
-use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
@@ -622,7 +623,7 @@ class Provider extends Category implements ProviderInterface
      */
     private function unsuspendSubscription(string $subscriptionId, string $message = 'License unsuspended'): EmptyResult
     {
-        $date = new DateTime('now', 'UTC');
+        $date = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
         $body = [
             'startDate' => $date->format('Y-m-d\TH:i:s.v')
