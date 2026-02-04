@@ -2,8 +2,9 @@
 
 All notable changes to the package will be documented in this file.
 
-## Unreleased
+## [v3.7](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.7) - 2026-02-04
 
+- Implement Pax8 (Microsoft 365) provider
 - Allow HTTP 204 (No Content) responses in generic response handlers
 
 ## [v3.6](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.6) - 2025-10-27
