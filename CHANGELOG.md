@@ -2,6 +2,14 @@
 
 All notable changes to the package will be documented in this file.
 
+## Unreleased
+
+- Require PHP 8.3; support PHP 8.3, 8.4 and 8.5
+- Require `upmind/provision-provider-base` v5 (Laravel 13, Guzzle 8)
+- Update dev dependencies to `phpstan/phpstan` ^2.0 and `phpunit/phpunit` ^12.0 || ^13.0
+- Update Pax8 API error handling for Guzzle 8 (`hasResponse()` is removed)
+- Update Docker dev environment and CI to PHP 8.3, 8.4 and 8.5
+
 ## [v3.7](https://github.com/upmind-automation/provision-provider-software-licenses/releases/tag/v3.7) - 2026-02-04
 
 - Implement Pax8 (Microsoft 365) provider

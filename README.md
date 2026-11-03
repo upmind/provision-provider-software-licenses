@@ -4,6 +4,7 @@
 
 This provision category contains the common functions used in provisioning + management flows for various software licenses.
 
+- [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
   - [Quick-start](#quick-start)
@@ -14,6 +15,13 @@ This provision category contains the common functions used in provisioning + man
 - [Credits](#credits)
 - [License](#license)
 - [Upmind](#upmind)
+
+## Requirements
+
+- PHP 8.3, 8.4 or 8.5
+- Laravel 13 (`illuminate/*` ^13.0)
+- Guzzle 8
+- [upmind/provision-provider-base](https://packagist.org/packages/upmind/provision-provider-base) v5
 
 ## Installation
 

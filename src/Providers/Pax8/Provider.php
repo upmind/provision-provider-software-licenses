@@ -373,7 +373,7 @@ class Provider extends Category implements ProviderInterface
      */
     protected function handleException(Throwable $e): void
     {
-        if (($e instanceof ClientException || $e instanceof ServerException) && $e->hasResponse()) {
+        if ($e instanceof ClientException || $e instanceof ServerException) {
             /** @var \Psr\Http\Message\ResponseInterface $response */
             $response = $e->getResponse();
 
