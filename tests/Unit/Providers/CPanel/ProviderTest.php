@@ -7,6 +7,7 @@ namespace Unit\Providers\CPanel;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
@@ -15,6 +16,7 @@ use Upmind\ProvisionProviders\SoftwareLicenses\Data\ReissueParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Data\SuspendParams;
 use Upmind\ProvisionProviders\SoftwareLicenses\Providers\CPanel\Provider;
 
+#[AllowMockObjectsWithoutExpectations]
 class ProviderTest extends TestCase
 {
     /**
@@ -56,7 +58,7 @@ class ProviderTest extends TestCase
     {
         $this->expectException(ProvisionFunctionError::class);
 
-        $createParams = $this->createMock(CreateParams::class);
+        $createParams = $this->createStub(CreateParams::class);
 
         $this->provider->create($createParams);
     }
@@ -65,7 +67,7 @@ class ProviderTest extends TestCase
     {
         $this->expectExceptionMessage('Package identifier is required!');
 
-        $createParams = $this->createMock(CreateParams::class);
+        $createParams = $this->createStub(CreateParams::class);
 
         $this->provider->create($createParams);
     }
@@ -74,7 +76,7 @@ class ProviderTest extends TestCase
     {
         $this->expectException(ProvisionFunctionError::class);
 
-        $reissueParams = $this->createMock(ReissueParams::class);
+        $reissueParams = $this->createStub(ReissueParams::class);
 
         $this->provider->reissue($reissueParams);
     }
@@ -83,7 +85,7 @@ class ProviderTest extends TestCase
     {
         $this->expectExceptionMessage('Operation not supported');
 
-        $reissueParams = $this->createMock(ReissueParams::class);
+        $reissueParams = $this->createStub(ReissueParams::class);
 
         $this->provider->reissue($reissueParams);
     }
